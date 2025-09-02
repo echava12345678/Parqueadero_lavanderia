@@ -17,8 +17,8 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 window.db = db;
 
-// Pega tu código Base64 del logo aquí.
-const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAA... (código muy largo)";
+
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definición de la función de utilidad al inicio del script
@@ -89,11 +89,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Usuarios del sistema
-    const users = {
-        'admin': 'admin123',
-        'trabajador': 'trabajador123'
-    };
+                                                                                                                                                                                                                                                                                                                // Usuarios del sistema
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        const users = {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'admin': 'admin123',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'trabajador': 'trabajador123'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        };
     
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
@@ -726,7 +726,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const imgHeight = 40;
         const pageWidth = doc.internal.pageSize.getWidth();
         const xPos = (pageWidth / 2) - (imgWidth / 2);
-        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
+        // doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
         doc.setFontSize(22);
         doc.text('Parqueadero El Reloj', 105, 50, null, null, 'center');
         doc.setFontSize(16);
@@ -876,7 +876,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const imgHeight = 40;
         const pageWidth = doc.internal.pageSize.getWidth();
         const xPos = (pageWidth / 2) - (imgWidth / 2);
-        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
+        // doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
         doc.setFontSize(22);
         doc.text('Parqueadero y Lavandería', 105, 50, null, null, 'center');
         doc.setFontSize(16);
