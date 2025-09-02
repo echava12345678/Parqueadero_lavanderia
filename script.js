@@ -3,8 +3,8 @@ const { jsPDF } = window.jspdf;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Definición de elementos del DOM
-    const loginSection = document.getElementById('login-section');
-    const mainApp = document.getElementById('main-app');
+     const loginSection = document.getElementById('login-section');
+   const mainApp = document.getElementById('main-app');
     const loginForm = document.getElementById('login-form');
     const btnLogin = document.getElementById('btn-login');
     const btnLogout = document.getElementById('btn-logout');
@@ -32,7 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaHora: 2000,
             hora: 4000,
             doceHoras: 15000,
-            mes: 200000 // Tarifa de comida rápida
+            mes: 150000 
+        },
+        'otros-mensualidad': {
+            mes: 200000
         }
     };
      let activeVehicles = [];
