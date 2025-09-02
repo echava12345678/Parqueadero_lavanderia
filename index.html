@@ -124,94 +124,98 @@
             <div id="admin-settings-tab" class="tab-content fade-in" style="display: none;">
                 <div id="admin-panel" class="card">
                     <h2>Panel de Administración <i class="fas fa-user-shield"></i></h2>
-                    <div class="card">
+                   <div class="admin-prices-container">
                         <h3>Ajustar Tarifas <i class="fas fa-dollar-sign"></i></h3>
-                        <div class="price-inputs">
-                            <div class="input-group">
-                                <label for="car-half-hour">Carro/Media Hora:</label>
-                                <input type="number" id="car-half-hour" value="3000" step="1000">
-                            </div>
-                            <div class="input-group">
-                                <label for="car-hour">Carro/Hora:</label>
-                                <input type="number" id="car-hour" value="6000" step="1000">
-                            </div>
-                            <div class="input-group">
-                                <label for="bike-half-hour">Moto/Media Hora:</label>
-                                <input type="number" id="bike-half-hour" value="2000" step="1000">
-                            </div>
-                            <div class="input-group">
-                                <label for="bike-hour">Moto/Hora:</label>
-                                <input type="number" id="bike-hour" value="4000" step="1000">
-                            </div>
-                        </div>
-                        <div class="price-inputs">
-                            <div class="input-group">
-                                <label for="car-12h">Carro/12h (Tarifa Plana):</label>
-                                <input type="number" id="car-12h" value="30000" step="1000">
-                            </div>
-                            <div class="input-group">
-                                <label for="bike-12h">Moto/12h (Tarifa Plana):</label>
-                                <input type="number" id="bike-12h" value="15000" step="1000">
-                            </div>
-                        </div>
-                        <div class="price-inputs">
-                            <div class="input-group">
-                                <label for="car-month">Carro/Mes (Promedio):</label>
-                                <input type="number" id="car-month" value="250000" step="1000">
-                            </div>
-                           <div class="input-group">
-                                <label for="bike-month">Moto/Mes (Promedio):</label>
-                                <input type="number" id="bike-month" value="150000" step="1000">
-                            </div>
-                        </div>
-                        <div class="other-vehicle-prices">
-                            <h4>Otros Vehículos (Mensualidad)</h4>
-                            <div class="size-prices">
-                                <h5>Pequeño</h5>
-                                <div class="input-group">
-                                    <label>Rango Mín:</label>
-                                    <input type="number" id="other-small-min" value="100000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Rango Máx:</label>
-                                    <input type="number" id="other-small-max" value="150000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Precio Defecto:</label>
-                                    <input type="number" id="other-small-default" value="120000">
-                                </div>
-                            </div>
-                            <div class="size-prices">
-                                <h5>Mediano</h5>
-                                <div class="input-group">
-                                    <label>Rango Mín:</label>
-                                    <input type="number" id="other-medium-min" value="151000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Rango Máx:</label>
-                                    <input type="number" id="other-medium-max" value="200000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Precio Defecto:</label>
-                                    <input type="number" id="other-medium-default" value="180000">
-                                </div>
-                            </div>
-                            <div class="size-prices">
-                                <h5>Grande</h5>
-                                <div class="input-group">
-                                    <label>Rango Mín:</label>
-                                    <input type="number" id="other-large-min" value="201000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Rango Máx:</label>
-                                    <input type="number" id="other-large-max" value="300000">
-                                </div>
-                                <div class="input-group">
-                                    <label>Precio Defecto:</label>
-                                    <input type="number" id="other-large-default" value="250000">
-                                </div>
-                            </div>
-                        </div>
+                       <div class="price-inputs">
+        <div class="input-group">
+            <label for="car-half-hour">Carro/Media Hora:</label>
+            <input type="number" id="car-half-hour" value="3000" step="1000">
+        </div>
+        <div class="input-group">
+            <label for="car-hour">Carro/Hora:</label>
+            <input type="number" id="car-hour" value="6000" step="1000">
+        </div>
+        <div class="input-group">
+            <label for="bike-half-hour">Moto/Media Hora:</label>
+            <input type="number" id="bike-half-hour" value="2000" step="1000">
+        </div>
+        <div class="input-group">
+            <label for="bike-hour">Moto/Hora:</label>
+            <input type="number" id="bike-hour" value="4000" step="1000">
+        </div>
+    </div>
+    <div class="price-inputs">
+        <div class="input-group">
+            <label for="car-12h">Carro/12h (Tarifa Plana):</label>
+            <input type="number" id="car-12h" value="30000" step="1000">
+        </div>
+        <div class="input-group">
+            <label for="bike-12h">Moto/12h (Tarifa Plana):</label>
+            <input type="number" id="bike-12h" value="15000" step="1000">
+        </div>
+    </div>
+    <div class="price-inputs">
+        <div class="input-group">
+            <label for="car-month">Carro/Mes (Promedio):</label>
+            <input type="number" id="car-month" value="250000" step="1000">
+        </div>
+        <div class="input-group">
+            <label for="bike-month">Moto/Mes (Promedio):</label>
+            <input type="number" id="bike-month" value="150000" step="1000">
+        </div>
+    </div>
+</div>
+
+<div class="other-vehicle-prices">
+    <h4>Otros Vehículos (Mensualidad)</h4>
+    <div class="size-prices-grid">
+        <div class="size-card">
+            <h5>Pequeño</h5>
+            <div class="input-group">
+                <label>Rango Mín:</label>
+                <input type="number" id="other-small-min" value="100000">
+            </div>
+            <div class="input-group">
+                <label>Rango Máx:</label>
+                <input type="number" id="other-small-max" value="150000">
+            </div>
+            <div class="input-group">
+                <label>Precio Defecto:</label>
+                <input type="number" id="other-small-default" value="120000">
+            </div>
+        </div>
+        <div class="size-card">
+            <h5>Mediano</h5>
+            <div class="input-group">
+                <label>Rango Mín:</label>
+                <input type="number" id="other-medium-min" value="151000">
+            </div>
+            <div class="input-group">
+                <label>Rango Máx:</label>
+                <input type="number" id="other-medium-max" value="200000">
+            </div>
+            <div class="input-group">
+                <label>Precio Defecto:</label>
+                <input type="number" id="other-medium-default" value="180000">
+            </div>
+        </div>
+        <div class="size-card">
+            <h5>Grande</h5>
+            <div class="input-group">
+                <label>Rango Mín:</label>
+                <input type="number" id="other-large-min" value="201000">
+            </div>
+            <div class="input-group">
+                <label>Rango Máx:</label>
+                <input type="number" id="other-large-max" value="300000">
+            </div>
+            <div class="input-group">
+                <label>Precio Defecto:</label>
+                <input type="number" id="other-large-default" value="250000">
+            </div>
+        </div>
+    </div>
+</div>
                         <button id="save-prices" class="primary-button"><i class="fas fa-save"></i> Guardar Tarifas</button>
                     </div>
                 </div>
