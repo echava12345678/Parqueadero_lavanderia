@@ -3,159 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parqueadero</title>
+    <title>Gestión de Parqueadero</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <header>
-        <h1>Gestión de Parqueadero</h1>
+        <h1>Gestión de Parqueadero 🚗</h1>
+        <nav>
+            <button id="btn-login">Iniciar Sesión</button>
+            <button id="btn-logout" style="display: none;">Cerrar Sesión</button>
+        </nav>
     </header>
-
     <main>
         <section id="login-section">
             <h2>Acceso al Sistema</h2>
             <form id="login-form">
-                <label for="username">Usuario:</label>
-                <input type="text" id="username" name="username" required>
-
-                <label for="password">Contraseña:</label>
-                <input type="password" id="password" name="password" required>
-
-                <button type="submit">Iniciar Sesión</button>
-                <p id="login-error" class="error-message"></p>
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit">Entrar</button>
             </form>
         </section>
 
-        <section id="worker-section" class="hidden">
-            <nav class="user-nav">
-                <h3>Bienvenido, Trabajador</h3>
-                <button id="logout-btn-worker" class="logout-btn">Cerrar Sesión</button>
-            </nav>
+        <section id="main-app" style="display: none;">
+            <div id="admin-panel" style="display: none;">
+                <h2>Panel de Administración</h2>
+                <div class="card">
+                    <h3>Ajustar Tarifas ⚙️</h3>
+                    <div class="price-inputs">
+                        <label for="car-hour">Carro/Hora:</label>
+                        <input type="number" id="car-hour" value="6000" step="1000">
+                        <label for="bike-hour">Moto/Hora:</label>
+                        <input type="number" id="bike-hour" value="4000" step="1000">
+                    </div>
+                    <div class="price-inputs">
+                        <label for="car-12h">Carro/12h:</label>
+                        <input type="number" id="car-12h" value="30000" step="1000">
+                        <label for="bike-12h">Moto/12h:</label>
+                        <input type="number" id="bike-12h" value="15000" step="1000">
+                    </div>
+                    <div class="price-inputs">
+                        <label for="car-month">Carro/Mes (Promedio):</label>
+                        <input type="number" id="car-month" value="250000" step="1000">
+                        <label for="food-month">Comida Rápida/Mes (Promedio):</label>
+                        <input type="number" id="food-month" value="200000" step="1000">
+                    </div>
+                    <button id="save-prices">Guardar Tarifas</button>
+                </div>
+            </div>
 
-            <div class="worker-dashboard">
-                <div class="form-container">
+            <div id="worker-panel">
+                <h2>Panel de Control del Trabajador</h2>
+                <div class="card">
+                    <h3>Registrar Entrada de Vehículo 📥</h3>
                     <form id="entry-form">
-                        <h3>Ingreso de Vehículo</h3>
-                        <label for="entry-placa">Placa:</label>
-                        <input type="text" id="entry-placa" required>
-                        
-                        <label for="entry-type">Tipo de Vehículo:</label>
-                        <select id="entry-type" required>
-                            <option value="">Seleccione...</option>
+                        <label for="plate-entry">Placa:</label>
+                        <input type="text" id="plate-entry" required>
+                        <label for="type-entry">Tipo:</label>
+                        <select id="type-entry" required>
                             <option value="carro">Carro</option>
                             <option value="moto">Moto</option>
-                            <option value="carrito-comida">Carrito de Comida</option>
+                            <option value="mensualidad">Mensualidad</option>
+                            <option value="comida-rapida">Comida Rápida (Mensualidad)</option>
                         </select>
-                        
-                        <div id="monthly-payment-group" class="hidden">
-                            <label for="is-monthly">Mensualidad:</label>
-                            <input type="checkbox" id="is-monthly">
-                        </div>
-
                         <button type="submit">Registrar Entrada</button>
                     </form>
                 </div>
                 
-                <div class="form-container">
+                <div class="card">
+                    <h3>Registrar Salida de Vehículo 📤</h3>
                     <form id="exit-form">
-                        <h3>Salida de Vehículo</h3>
-                        <label for="exit-placa">Placa:</label>
-                        <input type="text" id="exit-placa" required>
-
-                        <div id="payment-details" class="hidden">
-                            <label for="is-special-client">Cliente Especial:</label>
-                            <input type="checkbox" id="is-special-client">
-                            <div class="discount-options hidden">
-                                <label for="discount-percentage">Descuento (%)</label>
-                                <input type="number" id="discount-percentage" min="0" max="100">
-                            </div>
-                            
-                            <p><strong>Total a Pagar:</strong> <span id="total-price">0</span></p>
-                            <p><strong>Tiempo de Estancia:</strong> <span id="stay-time">0</span></p>
-                        </div>
-
-                        <button type="button" id="calculate-btn">Calcular Salida</button>
-                        <button type="submit" id="confirm-exit-btn" class="hidden">Confirmar Salida</button>
+                        <label for="plate-exit">Placa:</label>
+                        <input type="text" id="plate-exit" required>
+                        <button type="submit">Calcular y Registrar Salida</button>
                     </form>
                 </div>
-            </div>
 
-            <div class="parking-list-container">
-                <h3>Vehículos Parqueados</h3>
-                <ul id="parking-list"></ul>
-            </div>
-        </section>
+                <div id="result" class="card" style="display: none;">
+                    <h3>Detalles de la Salida</h3>
+                    <p id="result-text"></p>
+                    <button id="print-receipt">Descargar Recibo</button>
+                </div>
 
-        <section id="admin-section" class="hidden">
-            <nav class="user-nav">
-                <h3>Bienvenido, Administrador</h3>
-                <button id="logout-btn-admin" class="logout-btn">Cerrar Sesión</button>
-            </nav>
-
-            <div class="admin-dashboard">
-                <div class="form-container">
-                    <h3>Configuración de Tarifas</h3>
-                    <form id="rates-form">
-                        <label for="car-hour">Carro (Hora):</label>
-                        <input type="number" id="car-hour" min="0" required>
-
-                        <label for="moto-hour">Moto (Hora):</label>
-                        <input type="number" id="moto-hour" min="0" required>
-                        
-                        <label for="car-12h">Carro (12 Horas):</label>
-                        <input type="number" id="car-12h" min="0" required>
-
-                        <label for="moto-12h">Moto (12 Horas):</label>
-                        <input type="number" id="moto-12h" min="0" required>
-                        
-                        <label for="car-monthly">Carro (Mensualidad):</label>
-                        <input type="number" id="car-monthly" min="0" required>
-
-                        <label for="food-cart-monthly">Carrito de Comida (Mensualidad):</label>
-                        <input type="number" id="food-cart-monthly" min="0" required>
-                        
-                        <button type="submit">Actualizar Tarifas</button>
-                    </form>
+                <div class="card">
+                    <h3>Historial de Vehículos Activos</h3>
+                    <ul id="active-vehicles"></ul>
                 </div>
             </div>
         </section>
-
     </main>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyC81uKipArf__Mp9ernUh88E7kzjePdryA",
-            authDomain: "parqueadero-fb51c.firebaseapp.com",
-            projectId: "parqueadero-fb51c",
-            storageBucket: "parqueadero-fb51c.firebasestorage.app",
-            messagingSenderId: "76380635067",
-            appId: "1:76380635067:web:1efaefb6b8b540b4764e9e",
-            measurementId: "G-YRQPFTKDL2"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        window.db = database;
-        window.dbRef = {
-            vehicles: ref(database, 'vehicles'),
-            rates: ref(database, 'rates'),
-            users: ref(database, 'users')
-        };
-        window.firebase = {
-            push,
-            onValue,
-            update,
-            remove
-        };
-    </script>
-    <script type="module" src="script.js"></script>
-
+    <footer>
+        <p>Parqueadero El Reloj ⏰</p>
+    </footer>
+    <script src="script.js"></script>
 </body>
 </html>
