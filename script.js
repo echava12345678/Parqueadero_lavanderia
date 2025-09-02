@@ -1,5 +1,5 @@
 const { jsPDF } = window.jspdf;
-import { collection, addDoc, getDocs, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definición de la función de utilidad al inicio del script
