@@ -3,17 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Parqueadero Villa_laundrycoffee </title>
+    <title>Gestión de Parqueadero y Lavandería</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Agregamos el CSS para las nuevas animaciones */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animation-container {
+            font-size: 5rem;
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+            color: #2ecc71; /* Color verde para el pulgar arriba */
+        }
+
+        .animation-container.done {
+            color: #3498db; /* Color azul para la animación final */
+        }
+
+        .pulse-animation {
+            animation: pulse 1s infinite;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .laundry-status-pending { color: #f39c12; }
+        .laundry-status-ready { color: #2ecc71; }
+        .laundry-status-delivered { color: #3498db; }
+    </style>
 </head>
 <body>
      
     <header>
         <div class="logo-container">
-        <img src="Black-Gold-Luxury-and-Vintage-Decorative-Ornamental-Premium-Brand-Logo-2.png" alt="Logo de Parqueadero" class="header-logo">
-        <h1>Parqueadero Villa_laundrycoffee 🅿️</h1>
-            </div>
+            <img src="images/logo.png" alt="Logo de Parqueadero El Reloj" class="header-logo">
+            <h1>Parqueadero ⏰</h1>
+        </div>
         <nav>
             <button id="btn-login" class="nav-button"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
             <button id="btn-logout" class="nav-button" style="display: none;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
@@ -31,42 +68,43 @@
                     <label for="password"><i class="fas fa-key"></i> Contraseña</label>
                     <input type="password" id="password" placeholder="Contraseña" required>
                 </div>
-                <button type="submit" class="primary-button">Entrar</button>
+                <button type="submit" class="primary-button">Acceder</button>
             </form>
             <div id="login-message" class="message error-message" style="display: none;"></div>
         </section>
 
         <section id="main-app" style="display: none;">
-            <div id="notification-area" class="message" style="display: none;"></div>
+            <nav class="tab-menu">
+                <button class="tab-button active" data-tab="entry-exit-tab">Parqueadero</button>
+                <button class="tab-button" data-tab="laundry-tab">Lavandería</button>
+                <button class="tab-button" data-tab="active-vehicles-tab">Vehículos Activos</button>
+                <button class="tab-button" data-tab="admin-tab" id="admin-tab-button" style="display: none;">Administrador</button>
+            </nav>
 
-            <div class="tabs">
-                <button class="tab-button active" data-tab="entry-exit-tab"><i class="fas fa-car-side"></i> Entrada/Salida</button>
-                <button class="tab-button" data-tab="active-vehicles-tab"><i class="fas fa-list-ul"></i> Activos</button>
-                <button class="tab-button" data-tab="admin-settings-tab" id="admin-tab-button" style="display: none;"><i class="fas fa-cogs"></i> Admin</button>
-            </div>
+            <div id="notification-area" class="message info-message" style="display: none;"></div>
 
-            <div id="entry-exit-tab" class="tab-content active-tab fade-in">
+            <div id="entry-exit-tab" class="tab-content fade-in active">
                 <div class="card">
-                    <h3>Registrar Entrada <i class="fas fa-arrow-alt-circle-down"></i></h3>
+                    <h2>Entrada de Vehículo <i class="fas fa-car-side"></i></h2>
                     <form id="entry-form">
                         <div class="input-group">
-                            <label for="plate-entry">Placa ó Identificación del vehiculo:</label>
+                            <label for="plate-entry" id="plate-label"><i class="fas fa-id-card"></i> Placa:</label>
                             <input type="text" id="plate-entry" placeholder="Ej: ABC-123" required>
                         </div>
                         <div class="input-group">
-                            <label for="type-entry">Tipo:</label>
-                            <select id="type-entry" required>
-                                <option value="carro">Carro (por hora)</option>
-                                <option value="moto">Moto (por hora)</option>
+                            <label for="type-entry"><i class="fas fa-gas-pump"></i> Tipo de Vehículo:</label>
+                            <select id="type-entry">
+                                <option value="carro">Carro (Por Hora)</option>
+                                <option value="moto">Moto (Por Hora)</option>
                                 <option value="mensualidad">Carro (Mensualidad)</option>
                                 <option value="moto-mensualidad">Moto (Mensualidad)</option>
-                                <option value="otros-mensualidad">Otros Vehículos (Mensualidad)</option>
-                                <option value="otros-noche">Otros Vehículos (Por Noche)</option>
+                                <option value="otros-mensualidad">Otros (Mensualidad)</option>
+                                <option value="otros-noche">Otros (Noche)</option>
                             </select>
                         </div>
                         <div id="others-type-container" style="display: none;">
                             <div class="input-group">
-                                <label for="others-vehicle-size">Tamaño:</label>
+                                <label for="others-vehicle-size"><i class="fas fa-ruler-combined"></i> Tamaño:</label>
                                 <select id="others-vehicle-size">
                                     <option value="pequeño">Pequeño</option>
                                     <option value="mediano">Mediano</option>
@@ -74,203 +112,202 @@
                                 </select>
                             </div>
                             <div class="input-group">
-                                <label for="others-monthly-price">Precio:</label>
-                                <input type="text" id="others-monthly-price" name="others-monthly-price" placeholder="Precio acordado" >
+                                <label for="others-monthly-price" id="other-price-label"><i class="fas fa-money-bill-wave"></i> Precio:</label>
+                                <input type="number" id="others-monthly-price" placeholder="Precio acordado">
                             </div>
                         </div>
-                        <button type="submit" class="primary-button"><i class="fas fa-plus-circle"></i> Registrar Entrada</button>
+                        <button type="submit" class="primary-button"><i class="fas fa-sign-in-alt"></i> Registrar Entrada</button>
                     </form>
                 </div>
-                
+            
                 <div class="card">
-                    <h3>Registrar Salida <i class="fas fa-arrow-alt-circle-up"></i></h3>
+                    <h2>Salida de Vehículo <i class="fas fa-car-side fa-flip-horizontal"></i></h2>
                     <form id="exit-form">
                         <div class="input-group">
-                            <label for="plate-exit">Placa ó Identificación del vehiculo::</label>
+                            <label for="plate-exit"><i class="fas fa-id-card"></i> Placa/Descripción:</label>
                             <input type="text" id="plate-exit" placeholder="Ej: ABC-123" required>
                         </div>
                         <div id="special-client-section" style="display: none;">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="special-client">
-                                <label for="special-client">Cliente Especial</label>
+                            <div class="input-group">
+                                <label for="special-client">
+                                    <input type="checkbox" id="special-client"> Cliente Especial
+                                </label>
                             </div>
                             <div class="input-group">
-                                <label for="special-client-adjustment">Ajuste de precio:</label>
-                                <input type="number" id="special-client-adjustment" placeholder="+/- valor" value="0">
+                                <label for="special-client-adjustment"><i class="fas fa-percent"></i> Ajuste:</label>
+                                <input type="number" id="special-client-adjustment" placeholder="Ingresar valor">
                             </div>
                         </div>
-                        <p id="exit-cost-display"></p>
-                        <button type="submit" class="secondary-button"><i class="fas fa-sign-out-alt"></i> Calcular Salida</button>
+                        <div id="exit-cost-display"></div>
+                        <button type="submit" class="primary-button"><i class="fas fa-sign-out-alt"></i> Registrar Salida</button>
                     </form>
-                </div>
-
-                <div id="result" class="card" style="display: none;">
-                    <h3>Detalles de la Salida <i class="fas fa-file-invoice-dollar"></i></h3>
-                    <div id="result-content"></div>
-                    <button id="print-receipt" class="print-button"><i class="fas fa-file-pdf"></i> Descargar Recibo PDF</button>
+                    <div id="result" class="result-box" style="display: none;">
+                        <div id="result-content"></div>
+                        <button id="print-receipt" class="secondary-button"><i class="fas fa-print"></i> Descargar Recibo</button>
+                    </div>
                 </div>
             </div>
 
-            <div id="active-vehicles-tab" class="tab-content fade-in" style="display: none;">
+            <div id="laundry-tab" class="tab-content" style="display: none;">
+                <nav class="laundry-menu">
+                    <button class="laundry-button active" data-laundry-tab="laundry-register-tab">Registrar Pedido</button>
+                    <button class="laundry-button" data-laundry-tab="laundry-active-tab">Pedidos Activos</button>
+                </nav>
+
+                <div id="laundry-register-tab" class="laundry-content fade-in active">
+                    <div class="card">
+                        <h2>Registrar Pedido de Lavandería <i class="fas fa-tshirt"></i></h2>
+                        <form id="laundry-entry-form">
+                            <div class="input-group">
+                                <label for="laundry-client-name"><i class="fas fa-user-alt"></i> Nombre del Cliente:</label>
+                                <input type="text" id="laundry-client-name" placeholder="Nombre completo del cliente" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="laundry-loads"><i class="fas fa-box-open"></i> Cantidad de Lavadoras:</label>
+                                <input type="number" id="laundry-loads" value="1" min="1" required>
+                            </div>
+                            <button type="submit" class="primary-button"><i class="fas fa-plus-circle"></i> Registrar Pedido</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div id="laundry-active-tab" class="laundry-content" style="display: none;">
+                    <div class="card">
+                        <h2>Pedidos Activos <i class="fas fa-list-ul"></i></h2>
+                        <ul id="laundry-list" class="vehicles-list">
+                            <li><i class="fas fa-info-circle"></i> No hay pedidos de lavandería activos.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="active-vehicles-tab" class="tab-content" style="display: none;">
                 <div class="card">
-                    <h3>Vehículos Actualmente en Parqueadero <i class="fas fa-parking"></i></h3>
+                    <h2>Vehículos Activos <i class="fas fa-parking"></i></h2>
                     <div class="filter-buttons">
                         <button class="filter-button active" data-filter="all">Todos</button>
-                        <button class="filter-button" data-filter="carro">Carros</button>
-                        <button class="filter-button" data-filter="moto">Motos</button>
+                        <button class="filter-button" data-filter="carro">Carros (Hora)</button>
+                        <button class="filter-button" data-filter="moto">Motos (Hora)</button>
                         <button class="filter-button" data-filter="mensualidad">Mensualidad</button>
-                        <button class="filter-button" data-filter="otros-noche">Por Noche</button>
+                        <button class="filter-button" data-filter="otros-noche">Noche</button>
                     </div>
-                    <ul id="active-vehicles">
-                        <li>No hay vehículos activos.</li>
+                    <ul id="active-vehicles" class="vehicles-list">
+                        <li><i class="fas fa-info-circle"></i> No hay vehículos activos.</li>
                     </ul>
                 </div>
             </div>
 
-            <div id="admin-settings-tab" class="tab-content fade-in" style="display: none;">
-                <div id="admin-panel" class="card">
-                    <h2>Panel de Administración <i class="fas fa-user-shield"></i></h2>
-                    <div class="card">
-                        <h3>Ajustar Tarifas <i class="fas fa-dollar-sign"></i></h3>
-                        <div class="admin-prices-container">
-                            <div class="price-inputs">
-                                <div class="input-group">
-                                    <label for="car-half-hour">Carro/Media Hora:</label>
-                                    <input type="number" id="car-half-hour" value="3000" step="1000">
-                                </div>
-                                <div class="input-group">
-                                    <label for="car-hour">Carro/Hora:</label>
-                                    <input type="number" id="car-hour" value="6000" step="1000">
-                                </div>
-                                <div class="input-group">
-                                    <label for="bike-half-hour">Moto/Media Hora:</label>
-                                    <input type="number" id="bike-half-hour" value="2000" step="1000">
-                                </div>
-                                <div class="input-group">
-                                    <label for="bike-hour">Moto/Hora:</label>
-                                    <input type="number" id="bike-hour" value="4000" step="1000">
-                                </div>
-                            </div>
-                            <div class="price-inputs">
-                                <div class="input-group">
-                                    <label for="car-12h">Carro/12h (Tarifa Plana):</label>
-                                    <input type="number" id="car-12h" value="30000" step="1000">
-                                </div>
-                                <div class="input-group">
-                                    <label for="bike-12h">Moto/12h (Tarifa Plana):</label>
-                                    <input type="number" id="bike-12h" value="15000" step="1000">
-                                </div>
-                            </div>
-                            <div class="price-inputs">
-                                <div class="input-group">
-                                    <label for="car-month">Carro/Mes (Promedio):</label>
-                                    <input type="number" id="car-month" value="250000" step="1000">
-                                </div>
-                                <div class="input-group">
-                                    <label for="bike-month">Moto/Mes (Promedio):</label>
-                                    <input type="number" id="bike-month" value="150000" step="1000">
-                                </div>
-                            </div>
+            <div id="admin-tab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>Configuración de Tarifas <i class="fas fa-cogs"></i></h2>
+                    <div class="price-settings">
+                        <h3>Tarifas de Carro</h3>
+                        <div class="input-group">
+                            <label for="car-half-hour">Media Hora:</label>
+                            <input type="number" id="car-half-hour">
                         </div>
-                        <div class="other-vehicle-prices">
-                            <h4>Otros Vehículos (Mensualidad)</h4>
-                            <div class="size-prices-grid">
-                                <div class="size-card">
-                                    <h5>Pequeño</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-small-min" value="100000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-small-max" value="150000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-small-default" value="120000">
-                                    </div>
-                                </div>
-                                <div class="size-card">
-                                    <h5>Mediano</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-medium-min" value="151000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-medium-max" value="200000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-medium-default" value="180000">
-                                    </div>
-                                </div>
-                                <div class="size-card">
-                                    <h5>Grande</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-large-min" value="201000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-large-max" value="300000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-large-default" value="250000">
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="input-group">
+                            <label for="car-hour">Hora:</label>
+                            <input type="number" id="car-hour">
                         </div>
-                         <div class="other-vehicle-prices">
-                            <h4>Otros Vehículos (Por Noche)</h4>
-                            <div class="size-prices-grid">
-                                <div class="size-card">
-                                    <h5>Pequeño</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-night-small-min" value="10000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-night-small-max" value="15000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-night-small-default" value="12000">
-                                    </div>
-                                </div>
-                                <div class="size-card">
-                                    <h5>Mediano</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-night-medium-min" value="15100">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-night-medium-max" value="20000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-night-medium-default" value="18000">
-                                    </div>
-                                </div>
-                                <div class="size-card">
-                                    <h5>Grande</h5>
-                                    <div class="input-group">
-                                        <label>Rango Mín:</label>
-                                        <input type="number" id="other-night-large-min" value="20100">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Rango Máx:</label>
-                                        <input type="number" id="other-night-large-max" value="30000">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Precio Defecto:</label>
-                                        <input type="number" id="other-night-large-default" value="25000">
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="input-group">
+                            <label for="car-12h">12 Horas:</label>
+                            <input type="number" id="car-12h">
+                        </div>
+                        <div class="input-group">
+                            <label for="car-month">Mensualidad:</label>
+                            <input type="number" id="car-month">
+                        </div>
+                        <h3>Tarifas de Moto</h3>
+                        <div class="input-group">
+                            <label for="bike-half-hour">Media Hora:</label>
+                            <input type="number" id="bike-half-hour">
+                        </div>
+                        <div class="input-group">
+                            <label for="bike-hour">Hora:</label>
+                            <input type="number" id="bike-hour">
+                        </div>
+                        <div class="input-group">
+                            <label for="bike-12h">12 Horas:</label>
+                            <input type="number" id="bike-12h">
+                        </div>
+                        <div class="input-group">
+                            <label for="bike-month">Mensualidad:</label>
+                            <input type="number" id="bike-month">
+                        </div>
+                        <h3>Tarifas de Otros (Mensualidad)</h3>
+                        <div class="input-group">
+                            <label for="other-small-min">Pequeño Min:</label>
+                            <input type="number" id="other-small-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-small-max">Pequeño Max:</label>
+                            <input type="number" id="other-small-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-small-default">Pequeño Defecto:</label>
+                            <input type="number" id="other-small-default">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-medium-min">Mediano Min:</label>
+                            <input type="number" id="other-medium-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-medium-max">Mediano Max:</label>
+                            <input type="number" id="other-medium-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-medium-default">Mediano Defecto:</label>
+                            <input type="number" id="other-medium-default">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-large-min">Grande Min:</label>
+                            <input type="number" id="other-large-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-large-max">Grande Max:</label>
+                            <input type="number" id="other-large-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-large-default">Grande Defecto:</label>
+                            <input type="number" id="other-large-default">
+                        </div>
+                        <h3>Tarifas de Otros (Noche)</h3>
+                        <div class="input-group">
+                            <label for="other-night-small-min">Pequeño Min:</label>
+                            <input type="number" id="other-night-small-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-small-max">Pequeño Max:</label>
+                            <input type="number" id="other-night-small-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-small-default">Pequeño Defecto:</label>
+                            <input type="number" id="other-night-small-default">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-medium-min">Mediano Min:</label>
+                            <input type="number" id="other-night-medium-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-medium-max">Mediano Max:</label>
+                            <input type="number" id="other-night-medium-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-medium-default">Mediano Defecto:</label>
+                            <input type="number" id="other-night-medium-default">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-large-min">Grande Min:</label>
+                            <input type="number" id="other-night-large-min">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-large-max">Grande Max:</label>
+                            <input type="number" id="other-night-large-max">
+                        </div>
+                        <div class="input-group">
+                            <label for="other-night-large-default">Grande Defecto:</label>
+                            <input type="number" id="other-night-large-default">
                         </div>
                         <button id="save-prices" class="primary-button"><i class="fas fa-save"></i> Guardar Tarifas</button>
                     </div>
@@ -279,29 +316,8 @@
         </section>
     </main>
     <footer>
-        <p>© 2025 Parqueadero - Medellín, Colombia</p>
+        <p>© 2025 Parqueadero y Lavandería - Medellín, Colombia</p>
     </footer>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyC81uKipArf__Mp9ernUh88E7kzjePdryA",
-            authDomain: "parqueadero-fb51c.firebaseapp.com",
-            projectId: "parqueadero-fb51c",
-            storageBucket: "parqueadero-fb51c.firebasestorage.app",
-            messagingSenderId: "76380635067",
-            appId: "1:76380635067:web:657d27d21af6d5ac764e9e",
-            measurementId: "G-RFPH0N835J"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        window.db = getFirestore(app); // Hacemos `db` global para que `script.js` pueda usarla
-        const analytics = getAnalytics(app);
-        
-        console.log('Firebase y Firestore inicializados.');
-    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="script.js"></script>
 </body>
