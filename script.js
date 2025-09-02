@@ -91,10 +91,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Usuarios del sistema
-    const users = {
-        'admin': 'admin123',
-        'trabajador': 'trabajador123'
+                                                                                                                                                                                                                                                                                      // Usuarios del sistema
+                                                                                                                                                                                                                                                                         const users = {
+                                                                                                                                                                                                                                                                                                                                                                            'admin': 'admin123',
+                                                                                                                                                                                                                                                                                                                                                                     'trabajador': 'trabajador123'
     };
     
     // Declaración de la variable para vehículos activos
