@@ -278,6 +278,27 @@
     <footer>
         <p>© 2025 Parqueadero - Medellín, Colombia</p>
     </footer>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC81uKipArf__Mp9ernUh88E7kzjePdryA",
+            authDomain: "parqueadero-fb51c.firebaseapp.com",
+            projectId: "parqueadero-fb51c",
+            storageBucket: "parqueadero-fb51c.firebasestorage.app",
+            messagingSenderId: "76380635067",
+            appId: "1:76380635067:web:657d27d21af6d5ac764e9e",
+            measurementId: "G-RFPH0N835J"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app); // Hacemos `db` global para que `script.js` pueda usarla
+        const analytics = getAnalytics(app);
+        
+        console.log('Firebase y Firestore inicializados.');
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
