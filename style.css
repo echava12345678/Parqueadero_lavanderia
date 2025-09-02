@@ -403,11 +403,14 @@ footer {
 
 .logo-container {
     display: flex;
-    align-items: center;
-    gap: 10px; /* Espacio entre el logo y el título */
+    flex-direction: column; /* Apila el logo y el título */
+    align-items: center;    /* Centra horizontalmente el logo y el título */
+    gap: 5px; /* Espacio entre el logo y el título */
+    flex-grow: 1; /* Permite que el contenedor del logo ocupe el espacio disponible */
+    text-align: center;
 }
 
 .header-logo {
-    height: 50px; /* Ajusta el tamaño de tu logo */
+    height: 150px; 
     width: auto;
 }
