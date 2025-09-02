@@ -1,6 +1,7 @@
 const { jsPDF } = window.jspdf;
+import { collection, addDoc, getDocs, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
@@ -68,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
 
-    // Cargar tarifas y vehículos desde localStorage
-    const loadData = () => {
+    // Cargar tarifas y vehículos desde localStorage (manteniendo el de precios en localStorage)
+    const loadData = async () => {
         const storedPrices = localStorage.getItem('parkingPrices');
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
@@ -110,11 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
             document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
         }
+        
+        // Cargar vehículos desde Firestore
+        const vehiclesCol = collection(window.db, 'activeVehicles');
+        const vehicleSnapshot = await getDocs(vehiclesCol);
+        activeVehicles = vehicleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
+        updateActiveVehiclesList();
     };
 
-    loadData();
+    await loadData();
 
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
@@ -305,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Registrar entrada de vehículo
-    entryForm.addEventListener('submit', (e) => {
+    entryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-entry').value.trim().toUpperCase();
         const type = document.getElementById('type-entry').value;
@@ -315,7 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
             description = plate;
         }
 
-        if (activeVehicles.find(v => v.plate === plate) && !['otros-mensualidad', 'otros-noche'].includes(type)) {
+        // --- VERIFICA SI EL VEHÍCULO YA EXISTE EN FIRESTORE ---
+        const q = query(collection(window.db, 'activeVehicles'), where("plate", "==", plate));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && !['otros-mensualidad', 'otros-noche'].includes(type)) {
             showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
             return;
         }
@@ -347,12 +356,18 @@ document.addEventListener('DOMContentLoaded', () => {
             price: otherPrice,
             size: otherVehicleSize
         };
-        activeVehicles.push(newVehicle);
-        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
-        showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
-        entryForm.reset();
-        othersTypeContainer.style.display = 'none';
-        updateActiveVehiclesList();
+        
+        // --- AGREGA EL DOCUMENTO A LA COLECCIÓN 'activeVehicles' EN FIRESTORE ---
+        try {
+            const docRef = await addDoc(collection(window.db, 'activeVehicles'), newVehicle);
+            showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
+            entryForm.reset();
+            othersTypeContainer.style.display = 'none';
+            await loadData();
+        } catch (e) {
+            console.error("Error al añadir documento: ", e);
+            showNotification("Error al registrar el vehículo. Por favor, intente de nuevo.", 'error');
+        }
     });
 
     // Controlar visibilidad de la sección de cliente especial
@@ -426,17 +441,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
     // Registrar salida y calcular costo
-    exitForm.addEventListener('submit', (e) => {
+    exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicleIndex = activeVehicles.findIndex(v => v.plate === plate || v.description === plate);
+        const vehicle = activeVehicles.find(v => v.plate === plate || v.description === plate);
 
-        if (vehicleIndex === -1) {
+        if (!vehicle) {
             showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
             return;
         }
 
-        const vehicle = activeVehicles[vehicleIndex];
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
@@ -589,9 +603,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
 
-        activeVehicles.splice(vehicleIndex, 1);
-        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
-        updateActiveVehiclesList();
+        // --- ELIMINA EL DOCUMENTO DE FIRESTORE ---
+        try {
+            await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
+            showNotification(`Salida de ${displayPlate} registrada.`, 'success');
+            await loadData(); // Recarga la lista de vehículos desde Firestore
+        } catch (e) {
+            console.error("Error al eliminar documento: ", e);
+            showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
+        }
+
         exitForm.reset();
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
