@@ -58,33 +58,33 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Asignar valores a los campos de Carro si los elementos y propiedades existen
             const carHalfHourInput = document.getElementById('car-half-hour');
-            if (carHalfHourInput && prices.carro) carHalfHourInput.value = formatNumber(prices.carro.mediaHora);
+            if (carHalfHourInput && prices.carro && prices.carro.mediaHora !== undefined) carHalfHourInput.value = formatNumber(prices.carro.mediaHora);
             
             const carHourInput = document.getElementById('car-hour');
-            if (carHourInput && prices.carro) carHourInput.value = formatNumber(prices.carro.hora);
+            if (carHourInput && prices.carro && prices.carro.hora !== undefined) carHourInput.value = formatNumber(prices.carro.hora);
             
             const car12hInput = document.getElementById('car-12h');
-            if (car12hInput && prices.carro) car12hInput.value = formatNumber(prices.carro.doceHoras);
+            if (car12hInput && prices.carro && prices.carro.doceHoras !== undefined) car12hInput.value = formatNumber(prices.carro.doceHoras);
             
             const carMonthInput = document.getElementById('car-month');
-            if (carMonthInput && prices.carro) carMonthInput.value = formatNumber(prices.carro.mes);
+            if (carMonthInput && prices.carro && prices.carro.mes !== undefined) carMonthInput.value = formatNumber(prices.carro.mes);
             
             // Asignar valores a los campos de Moto si los elementos y propiedades existen
             const bikeHalfHourInput = document.getElementById('bike-half-hour');
-            if (bikeHalfHourInput && prices.moto) bikeHalfHourInput.value = formatNumber(prices.moto.mediaHora);
+            if (bikeHalfHourInput && prices.moto && prices.moto.mediaHora !== undefined) bikeHalfHourInput.value = formatNumber(prices.moto.mediaHora);
             
             const bikeHourInput = document.getElementById('bike-hour');
-            if (bikeHourInput && prices.moto) bikeHourInput.value = formatNumber(prices.moto.hora);
+            if (bikeHourInput && prices.moto && prices.moto.hora !== undefined) bikeHourInput.value = formatNumber(prices.moto.hora);
             
             const bike12hInput = document.getElementById('bike-12h');
-            if (bike12hInput && prices.moto) bike12hInput.value = formatNumber(prices.moto.doceHoras);
+            if (bike12hInput && prices.moto && prices.moto.doceHoras !== undefined) bike12hInput.value = formatNumber(prices.moto.doceHoras);
             
             const bikeMonthInput = document.getElementById('bike-month');
-            if (bikeMonthInput && prices.moto && prices.moto.mes) bikeMonthInput.value = formatNumber(prices.moto.mes);
+            if (bikeMonthInput && prices.moto && prices.moto.mes !== undefined) bikeMonthInput.value = formatNumber(prices.moto.mes);
     
             // Asignar valores a los campos de Otros si los elementos y propiedades existen
             const foodMonthInput = document.getElementById('food-month');
-            if (foodMonthInput && prices['otros-mensualidad']) foodMonthInput.value = formatNumber(prices['otros-mensualidad'].mes);
+            if (foodMonthInput && prices['otros-mensualidad'] && prices['otros-mensualidad'].mes !== undefined) foodMonthInput.value = formatNumber(prices['otros-mensualidad'].mes);
         }
 
         activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
@@ -212,6 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
+        
+        // Recargar los datos para que se muestren con el formato correcto
+        loadData();
     });
 
     // Registrar entrada de vehículo
