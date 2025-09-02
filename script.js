@@ -17,7 +17,7 @@ const firebaseConfig = {
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db = getDatabase(app);
+const db = getDatabase(app, "https://parqueadero-fb51c-default-rtdb.firebaseio.com/");
 
 // Precios predeterminados
 const defaultPrices = {
