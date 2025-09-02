@@ -153,8 +153,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
             document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
             document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
-            document.getElementById('other-night-large-max'].value = prices['otros-noche'].grande.max;
-            document.getElementById('other-night-large-default'].value = prices['otros-noche'].grande.noche;
+            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
+            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
         }
         
         // Cargar vehículos desde Firestore
