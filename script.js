@@ -1,356 +1,296 @@
-// Obtener referencias a los elementos del DOM
-// Es fundamental asegurar que estos elementos existan en tu HTML
-const loginSection = document.getElementById('login-section');
-const workerSection = document.getElementById('worker-section');
-const adminSection = document.getElementById('admin-section');
-const loginForm = document.getElementById('login-form');
-const entryForm = document.getElementById('entry-form');
-const exitForm = document.getElementById('exit-form');
-const ratesForm = document.getElementById('rates-form');
-const parkingList = document.getElementById('parking-list');
-const loginError = document.getElementById('login-error');
+document.addEventListener('DOMContentLoaded', () => {
+    // Definición de elementos del DOM
+    const loginSection = document.getElementById('login-section');
+    const mainApp = document.getElementById('main-app');
+    const loginForm = document.getElementById('login-form');
+    const btnLogin = document.getElementById('btn-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const adminPanel = document.getElementById('admin-panel');
+    const workerPanel = document.getElementById('worker-panel');
+    const entryForm = document.getElementById('entry-form');
+    const exitForm = document.getElementById('exit-form');
+    const resultDiv = document.getElementById('result');
+    const resultText = document.getElementById('result-text');
+    const activeVehiclesList = document.getElementById('active-vehicles');
+    const printReceiptBtn = document.getElementById('print-receipt');
+    const savePricesBtn = document.getElementById('save-prices');
 
-// Referencias específicas para los botones y campos de salida
-const exitPlacaInput = document.getElementById('exit-placa');
-const calculateBtn = document.getElementById('calculate-btn');
-const confirmExitBtn = document.getElementById('confirm-exit-btn');
-const isSpecialClientCheckbox = document.getElementById('is-special-client');
-const discountOptionsDiv = document.querySelector('.discount-options');
-const paymentDetailsDiv = document.getElementById('payment-details');
-const totalPriceSpan = document.getElementById('total-price');
-const stayTimeSpan = document.getElementById('stay-time');
+    // Tarifas iniciales
+    let prices = {
+        carro: {
+            hora: 6000,
+            doceHoras: 30000,
+            mes: 250000
+        },
+        moto: {
+            hora: 4000,
+            doceHoras: 15000,
+            mes: 200000 // Tarifa de comida rápida
+        }
+    };
 
-// Referencias para el formulario de entrada
-const isMonthlyCheckbox = document.getElementById('is-monthly');
-const monthlyPaymentGroup = document.getElementById('monthly-payment-group');
-const entryTypeSelect = document.getElementById('entry-type');
+    // Usuarios del sistema
+    const users = {
+        'admin': 'admin123',
+        'trabajador': 'trabajador123'
+    };
 
-// Variables globales para la sesión y tarifas
-let currentRole = null;
-let currentRates = {
-    car_hour: 6000,
-    moto_hour: 4000,
-    car_12h: 30000,
-    moto_12h: 15000,
-    car_monthly: 250000,
-    food_cart_monthly: 200000
-};
-let tempVehicleData = null; // Variable para almacenar los datos del vehículo para el recibo
+    // Cargar tarifas y vehículos desde localStorage
+    const storedPrices = localStorage.getItem('parkingPrices');
+    if (storedPrices) {
+        prices = JSON.parse(storedPrices);
+        document.getElementById('car-hour').value = prices.carro.hora;
+        document.getElementById('bike-hour').value = prices.moto.hora;
+        document.getElementById('car-12h').value = prices.carro.doceHoras;
+        document.getElementById('bike-12h').value = prices.moto.doceHoras;
+        document.getElementById('car-month').value = prices.carro.mes;
+        document.getElementById('food-month').value = prices.moto.mes;
+    }
 
-// --- Lógica de Autenticación y Visualización de Secciones ---
-const users = {
-    admin: 'admin123',
-    trabajador: 'trabajador123'
-};
+    let activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
 
-function showSection(section) {
-    loginSection.classList.add('hidden');
-    workerSection.classList.add('hidden');
-    adminSection.classList.add('hidden');
-    section.classList.remove('hidden');
-}
+    // Funciones de utilidad
+    const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
 
-if (loginForm) {
+    const updateActiveVehiclesList = () => {
+        activeVehiclesList.innerHTML = '';
+        if (activeVehicles.length === 0) {
+            activeVehiclesList.innerHTML = '<li>No hay vehículos activos.</li>';
+        } else {
+            activeVehicles.forEach(v => {
+                const li = document.createElement('li');
+                li.textContent = `Placa: ${v.plate.toUpperCase()}, Tipo: ${v.type}, Entrada: ${new Date(v.entryTime).toLocaleString()}`;
+                activeVehiclesList.appendChild(li);
+            });
+        }
+    };
+
+    // Funciones de Autenticación
+    const login = (username, password) => {
+        if (users[username] === password) {
+            localStorage.setItem('currentUser', username);
+            showApp(username);
+        } else {
+            alert('Usuario o contraseña incorrectos.');
+        }
+    };
+
+    const showApp = (user) => {
+        loginSection.style.display = 'none';
+        mainApp.style.display = 'block';
+        btnLogin.style.display = 'none';
+        btnLogout.style.display = 'inline';
+
+        if (user === 'admin') {
+            adminPanel.style.display = 'block';
+        } else {
+            adminPanel.style.display = 'none';
+        }
+        updateActiveVehiclesList();
+    };
+
+    const logout = () => {
+        localStorage.removeItem('currentUser');
+        loginSection.style.display = 'block';
+        mainApp.style.display = 'none';
+        btnLogin.style.display = 'inline';
+        btnLogout.style.display = 'none';
+        resultDiv.style.display = 'none';
+    };
+
+    // Manejadores de eventos
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const username = e.target.username.value;
-        const password = e.target.password.value;
-
-        if (users[username] && users[username] === password) {
-            currentRole = username;
-            if (username === 'admin') {
-                showSection(adminSection);
-                loadRates();
-            } else {
-                showSection(workerSection);
-                loadVehicles(); // Cargar vehículos al entrar como trabajador
-            }
-            if (loginError) loginError.textContent = '';
-        } else {
-            if (loginError) loginError.textContent = 'Usuario o contraseña incorrectos.';
-        }
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        login(username, password);
     });
-}
 
-document.querySelectorAll('.logout-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        currentRole = null;
-        showSection(loginSection);
-        loginForm.reset();
-    });
-});
-
-// --- Lógica del Trabajador ---
-
-// Cargar vehículos desde Firebase
-function loadVehicles() {
-    if (window.firebase && window.dbRef && window.dbRef.vehicles && parkingList) {
-        window.firebase.onValue(window.dbRef.vehicles, (snapshot) => {
-            const vehicles = snapshot.val() || {};
-            parkingList.innerHTML = '';
-            const parkingKeys = Object.keys(vehicles);
-
-            if (parkingKeys.length === 0) {
-                parkingList.innerHTML = '<p style="text-align: center;">No hay vehículos parqueados.</p>';
-                return;
-            }
-
-            parkingKeys.forEach(key => {
-                const vehicle = vehicles[key];
-                const li = document.createElement('li');
-                const entryTime = new Date(vehicle.entryTime);
-                const entryDate = entryTime.toLocaleDateString();
-                const entryClock = entryTime.toLocaleTimeString();
-                const stayDuration = getStayDuration(vehicle.entryTime);
-                
-                let monthlyInfo = '';
-                if (vehicle.isMonthly) {
-                    const nextPaymentDate = new Date(entryTime);
-                    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-                    monthlyInfo = ` - Mensualidad (pago el ${nextPaymentDate.toLocaleDateString()})`;
-                }
-
-                li.innerHTML = `
-                    <strong>Placa:</strong> ${vehicle.placa} | 
-                    <strong>Tipo:</strong> ${vehicle.type} | 
-                    <strong>Ingreso:</strong> ${entryDate} ${entryClock} ${monthlyInfo} |
-                    <strong>Tiempo:</strong> ${stayDuration}
-                `;
-                parkingList.appendChild(li);
-            });
-        });
+    btnLogout.addEventListener('click', logout);
+    
+    // Si ya hay una sesión activa, la muestra
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+        showApp(currentUser);
+    } else {
+        loginSection.style.display = 'block';
+        mainApp.style.display = 'none';
     }
-}
 
-function getStayDuration(entryTime) {
-    const now = new Date();
-    const entry = new Date(entryTime);
-    const diff = now.getTime() - entry.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-}
+    // Guardar tarifas del administrador
+    savePricesBtn.addEventListener('click', () => {
+        prices.carro.hora = parseInt(document.getElementById('car-hour').value);
+        prices.moto.hora = parseInt(document.getElementById('bike-hour').value);
+        prices.carro.doceHoras = parseInt(document.getElementById('car-12h').value);
+        prices.moto.doceHoras = parseInt(document.getElementById('bike-12h').value);
+        prices.carro.mes = parseInt(document.getElementById('car-month').value);
+        prices.moto.mes = parseInt(document.getElementById('food-month').value);
+        localStorage.setItem('parkingPrices', JSON.stringify(prices));
+        alert('Tarifas actualizadas correctamente.');
+    });
 
-// Lógica de Entrada de Vehículo
-if (entryForm) {
+    // Registrar entrada de vehículo
     entryForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const placa = e.target['entry-placa'].value.toUpperCase();
-        const type = e.target['entry-type'].value;
-        const isMonthly = e.target['is-monthly'].checked;
-        
-        if (window.firebase && window.dbRef && window.dbRef.vehicles) {
-            window.firebase.push(window.dbRef.vehicles, {
-                placa,
-                type,
-                entryTime: new Date().toISOString(),
-                isMonthly,
-                monthlyRate: isMonthly ? (type === 'carro' ? currentRates.car_monthly : currentRates.food_cart_monthly) : null
-            }).then(() => {
-                alert('Vehículo registrado correctamente.');
-                entryForm.reset();
-                if (monthlyPaymentGroup) monthlyPaymentGroup.classList.add('hidden');
-                if (isMonthlyCheckbox) isMonthlyCheckbox.checked = false;
-            }).catch(error => {
-                alert('Error al registrar el vehículo: ' + error.message);
-            });
-        }
-    });
-}
+        const plate = document.getElementById('plate-entry').value.trim().toUpperCase();
+        const type = document.getElementById('type-entry').value;
 
-// Mostrar/Ocultar opción de mensualidad
-if (entryTypeSelect) {
-    entryTypeSelect.addEventListener('change', (e) => {
-        const type = e.target.value;
-        if (monthlyPaymentGroup) {
-            if (type === 'carro' || type === 'carrito-comida') {
-                monthlyPaymentGroup.classList.remove('hidden');
-            } else {
-                monthlyPaymentGroup.classList.add('hidden');
-            }
-        }
-    });
-}
-
-// Lógica de Salida de Vehículo
-if (calculateBtn) {
-    calculateBtn.addEventListener('click', () => {
-        const placa = exitPlacaInput.value.toUpperCase();
-        if (!placa) {
-            alert('Por favor, ingrese una placa.');
+        // Validar si la placa ya está registrada
+        if (activeVehicles.find(v => v.plate === plate)) {
+            alert('¡Esta placa ya se encuentra registrada!');
             return;
         }
 
-        window.firebase.onValue(window.dbRef.vehicles, (snapshot) => {
-            const vehicles = snapshot.val() || {};
-            const vehicleEntry = Object.entries(vehicles).find(([key, value]) => value.placa === placa);
-
-            if (!vehicleEntry) {
-                alert('Vehículo no encontrado. Verifique la placa.');
-                return;
-            }
-
-            const [vehicleKey, vehicleData] = vehicleEntry;
-            const entryTime = new Date(vehicleData.entryTime);
-            const now = new Date();
-            const diffInMinutes = (now.getTime() - entryTime.getTime()) / (1000 * 60);
-
-            // Calcular el costo
-            let totalCost = 0;
-            let stayHours = Math.floor(diffInMinutes / 60);
-            let stayMinutes = Math.floor(diffInMinutes % 60);
-            
-            if (vehicleData.isMonthly) {
-                const nextPaymentDate = new Date(entryTime);
-                nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-                stayHours = Math.floor((now.getTime() - entryTime.getTime()) / (1000 * 60 * 60)); // En horas para la mensualidad
-                totalCost = vehicleData.monthlyRate;
-                totalPriceSpan.textContent = `Mensualidad: ${totalCost.toLocaleString('es-CO')} COP`;
-                stayTimeSpan.textContent = `Vence: ${nextPaymentDate.toLocaleDateString()}`;
-            } else {
-                if (diffInMinutes <= 30) {
-                    totalCost = vehicleData.type === 'carro' ? currentRates.car_hour / 2 : currentRates.moto_hour / 2;
-                } else {
-                    const hours = diffInMinutes / 60;
-                    if (hours > 12) {
-                        totalCost = vehicleData.type === 'carro' ? currentRates.car_12h : currentRates.moto_12h;
-                    } else {
-                        totalCost = Math.ceil(hours) * (vehicleData.type === 'carro' ? currentRates.car_hour : currentRates.moto_hour);
-                    }
-                }
-
-                // Aplicar descuento si es cliente especial
-                if (isSpecialClientCheckbox && isSpecialClientCheckbox.checked) {
-                    const discountPercentage = document.getElementById('discount-percentage').value || 0;
-                    totalCost = totalCost * (1 - (discountPercentage / 100));
-                }
-
-                totalPriceSpan.textContent = `${totalCost.toLocaleString('es-CO')} COP`;
-                stayTimeSpan.textContent = `${stayHours}h ${stayMinutes}m`;
-            }
-            
-            // Mostrar los detalles de pago
-            if (paymentDetailsDiv) paymentDetailsDiv.classList.remove('hidden');
-            if (confirmExitBtn) confirmExitBtn.classList.remove('hidden');
-
-            // Almacenar datos temporales para el recibo
-            tempVehicleData = {
-                ...vehicleData,
-                totalCost,
-                exitTime: now.toISOString(),
-                stayTime: `${stayHours}h ${stayMinutes}m`,
-                key: vehicleKey
-            };
-        }, {
-            onlyOnce: true
-        });
-    });
-}
-
-if (confirmExitBtn) {
-    confirmExitBtn.addEventListener('click', () => {
-        if (tempVehicleData) {
-            generateReceipt(tempVehicleData);
-            window.firebase.remove(window.firebase.ref(window.db, `vehicles/${tempVehicleData.key}`)).then(() => {
-                alert('Salida registrada y recibo generado.');
-                exitForm.reset();
-                if (paymentDetailsDiv) paymentDetailsDiv.classList.add('hidden');
-                if (confirmExitBtn) confirmExitBtn.classList.add('hidden');
-                tempVehicleData = null; // Limpiar datos temporales
-            }).catch(error => {
-                alert('Error al registrar la salida: ' + error.message);
-            });
-        }
-    });
-}
-
-if (isSpecialClientCheckbox) {
-    isSpecialClientCheckbox.addEventListener('change', (e) => {
-        if (discountOptionsDiv) {
-            if (e.target.checked) {
-                discountOptionsDiv.classList.remove('hidden');
-            } else {
-                discountOptionsDiv.classList.add('hidden');
-            }
-        }
-    });
-}
-
-// --- Lógica del Administrador ---
-
-function loadRates() {
-    if (window.firebase && window.dbRef && window.dbRef.rates && ratesForm) {
-        window.firebase.onValue(window.dbRef.rates, (snapshot) => {
-            const rates = snapshot.val();
-            if (rates) {
-                currentRates = rates;
-                document.getElementById('car-hour').value = rates.car_hour;
-                document.getElementById('moto-hour').value = rates.moto_hour;
-                document.getElementById('car-12h').value = rates.car_12h;
-                document.getElementById('moto-12h').value = rates.moto_12h;
-                document.getElementById('car-monthly').value = rates.car_monthly;
-                document.getElementById('food-cart-monthly').value = rates.food_cart_monthly;
-            }
-        }, {
-            onlyOnce: true
-        });
-    }
-}
-
-if (ratesForm) {
-    ratesForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const newRates = {
-            car_hour: Number(e.target['car-hour'].value),
-            moto_hour: Number(e.target['moto-hour'].value),
-            car_12h: Number(e.target['car-12h'].value),
-            moto_12h: Number(e.target['moto-12h'].value),
-            car_monthly: Number(e.target['car-monthly'].value),
-            food_cart_monthly: Number(e.target['food-cart-monthly'].value)
+        const newVehicle = {
+            plate,
+            type,
+            entryTime: new Date().toISOString()
         };
-        
-        if (window.firebase && window.dbRef && window.dbRef.rates) {
-            window.firebase.update(window.dbRef.rates, newRates).then(() => {
-                currentRates = newRates;
-                alert('Tarifas actualizadas correctamente.');
-            }).catch(error => {
-                alert('Error al actualizar las tarifas: ' + error.message);
-            });
+        activeVehicles.push(newVehicle);
+        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
+        alert(`Entrada de ${type} con placa ${plate} registrada.`);
+        entryForm.reset();
+        updateActiveVehiclesList();
+    });
+
+    // Registrar salida y calcular costo
+    exitForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
+        const vehicleIndex = activeVehicles.findIndex(v => v.plate === plate);
+
+        if (vehicleIndex === -1) {
+            alert('Placa no encontrada. Por favor, verifique la placa e intente de nuevo.');
+            return;
         }
+
+        const vehicle = activeVehicles[vehicleIndex];
+        const exitTime = new Date();
+        const entryTime = new Date(vehicle.entryTime);
+        const diffInMs = exitTime - entryTime;
+        const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+        const diffInHours = diffInMs / (1000 * 60 * 60);
+        let totalCost = 0;
+        let discount = 0;
+        const isSpecialClient = confirm('¿Es un cliente especial y aplica descuento?');
+        
+        if (vehicle.type === 'mensualidad' || vehicle.type === 'comida-rapida') {
+            const entryDay = entryTime.getDate();
+            const currentDay = exitTime.getDate();
+            let paymentDay = new Date(entryTime);
+            paymentDay.setMonth(paymentDay.getMonth() + 1);
+            
+            const daysOverdue = Math.max(0, currentDay - entryDay);
+            const monthlyPrice = vehicle.type === 'mensualidad' ? prices.carro.mes : prices.moto.mes;
+            
+            resultText.innerHTML = `
+                <p>Placa: <strong>${vehicle.plate}</strong></p>
+                <p>Tipo: <strong>${vehicle.type}</strong></p>
+                <p>Valor mensualidad: <strong>$${formatNumber(monthlyPrice)} COP</strong></p>
+                <p>Día de pago próximo: <strong>${paymentDay.toLocaleDateString()}</strong></p>
+                <p>Días de retraso (si aplica): <strong>${daysOverdue}</strong></p>
+                <p><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
+            `;
+            totalCost = 0;
+        } else {
+            const vehicleType = vehicle.type;
+            const pricePerHour = prices[vehicleType].hora;
+            const priceFor12Hours = prices[vehicleType].doceHoras;
+
+            if (diffInHours <= 0.5) {
+                totalCost = pricePerHour / 2;
+            } else if (diffInHours > 0.5 && diffInHours <= 12) {
+                totalCost = Math.ceil(diffInHours) * pricePerHour;
+            } else {
+                totalCost = priceFor12Hours;
+            }
+            
+            if (isSpecialClient) {
+                const discountRate = parseFloat(prompt('Ingrese el porcentaje de descuento (ej: 10 para 10%):')) / 100;
+                if (!isNaN(discountRate)) {
+                    discount = totalCost * discountRate;
+                    totalCost -= discount;
+                }
+            }
+
+            resultText.innerHTML = `
+                <p>Placa: <strong>${vehicle.plate}</strong></p>
+                <p>Tipo: <strong>${vehicle.type}</strong></p>
+                <p>Tiempo de estadía: <strong>${Math.floor(diffInHours)} horas y ${diffInMinutes % 60} minutos</strong></p>
+                <p>Costo calculado (sin descuento): <strong>$${formatNumber(totalCost + discount)} COP</strong></p>
+            `;
+            
+            if (discount > 0) {
+                resultText.innerHTML += `<p>Descuento aplicado: <strong>$${formatNumber(discount)} COP</strong></p>`;
+            }
+            
+            resultText.innerHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
+            
+        }
+
+        resultDiv.style.display = 'block';
+
+        // Remover el vehículo de la lista y actualizar localStorage
+        activeVehicles.splice(vehicleIndex, 1);
+        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
+        updateActiveVehiclesList();
+        
+        // Almacenar datos para el recibo
+        localStorage.setItem('lastReceipt', JSON.stringify({
+            plate: vehicle.plate,
+            type: vehicle.type,
+            entryTime,
+            exitTime,
+            costoFinal: totalCost,
+            descuento: discount,
+            esMensualidad: (vehicle.type === 'mensualidad' || vehicle.type === 'comida-rapida'),
+            costoOriginal: totalCost + discount
+        }));
     });
-}
 
-// --- Lógica para Generar Recibo ---
-function generateReceipt(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    // Descargar recibo de pago
+    printReceiptBtn.addEventListener('click', () => {
+        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
+        if (!receiptData) {
+            alert('No hay un recibo para descargar.');
+            return;
+        }
 
-    doc.setFontSize(22);
-    doc.text("Parqueadero", 105, 20, null, null, "center");
-    
-    doc.setFontSize(16);
-    doc.text("Recibo de Pago", 105, 30, null, null, "center");
-
-    const entryDate = new Date(data.entryTime).toLocaleString('es-CO');
-    const exitDate = new Date(data.exitTime).toLocaleString('es-CO');
-
-    const tableData = [
-        ["Placa", data.placa],
-        ["Tipo de Vehículo", data.type],
-        ["Hora de Entrada", entryDate],
-        ["Hora de Salida", exitDate],
-        ["Tiempo de Estancia", data.isMonthly ? `Vence: ${new Date(data.entryTime).toLocaleDateString()}` : data.stayTime],
-        ["Total a Pagar", `${data.totalCost.toLocaleString('es-CO')} COP`]
-    ];
-    
-    doc.autoTable({
-        startY: 40,
-        head: [['Concepto', 'Detalle']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [76, 175, 80] },
+        const entryDate = new Date(receiptData.entryTime);
+        const exitDate = new Date(receiptData.exitTime);
+        const diffInMs = exitDate - entryDate;
+        const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const remainingMinutes = diffInMinutes % 60;
+        
+        const receiptContent = `
+            Parqueadero El Reloj - Recibo de Pago
+            -------------------------------------
+            Placa: ${receiptData.plate}
+            Tipo de Vehículo: ${receiptData.type}
+            
+            Fecha de Entrada: ${entryDate.toLocaleString()}
+            Fecha de Salida: ${exitDate.toLocaleString()}
+            
+            ${!receiptData.esMensualidad ? `Tiempo de estadía: ${diffInHours} horas y ${remainingMinutes} minutos` : 'Servicio Mensual'}
+            
+            Costo Original: $${formatNumber(receiptData.costoOriginal)} COP
+            Descuento aplicado: $${formatNumber(receiptData.descuento)} COP
+            
+            Total a Pagar: $${formatNumber(receiptData.costoFinal)} COP
+            
+            ¡Gracias por su visita!
+        `;
+        
+        const blob = new Blob([receiptContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Recibo_${receiptData.plate}_${new Date().toLocaleDateString()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     });
-    
-    doc.save(`Recibo_Parqueadero_${data.placa}.pdf`);
-}
+
+    updateActiveVehiclesList();
+});
