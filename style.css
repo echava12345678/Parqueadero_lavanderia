@@ -121,7 +121,8 @@ form {
 input[type="text"],
 input[type="password"],
 input[type="number"],
-select {
+select,
+textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid var(--border-color);
@@ -133,7 +134,8 @@ select {
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="number"]:focus,
-select:focus {
+select:focus,
+textarea:focus {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
     outline: none;
@@ -323,16 +325,14 @@ footer {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- NUEVOS ESTILOS PARA EL PANEL DE ADMINISTRACIÓN --- */
+/* --- ESTILOS PARA EL PANEL DE ADMINISTRACIÓN --- */
 
-/* Contenedor principal para todas las tarifas */
 .admin-prices-container {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
 }
 
-/* Sección de otros vehículos (tarjeta principal) */
 .other-vehicle-prices {
     border: 1px solid #e0e0e0;
     border-radius: 10px;
@@ -350,14 +350,12 @@ footer {
     margin-bottom: 20px;
 }
 
-/* Contenedor para las tarjetas de tamaño */
 .size-prices-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
 
-/* Estilos para cada tarjeta de tamaño (pequeño, mediano, grande) */
 .size-card {
     background-color: #ffffff;
     border: 1px solid #dcdcdc;
@@ -375,12 +373,10 @@ footer {
     font-weight: bold;
 }
 
-/* Mejora la separación de los grupos de input dentro de las tarjetas */
 .size-card .input-group {
     margin-bottom: 10px;
 }
 
-/* Centrar logo y título en el header */
 .logo-container {
     display: flex;
     flex-direction: column;
@@ -395,8 +391,9 @@ footer {
     width: auto;
 }
 
-/* Estilos para la sección de lavandería */
-.laundry-menu {
+/* --- ESTILOS PARA LA SECCIÓN DE LAVANDERÍA --- */
+
+.laundry-sub-menu {
     display: flex;
     margin-bottom: 20px;
     background-color: var(--card-background);
@@ -405,7 +402,7 @@ footer {
     overflow: hidden;
 }
 
-.laundry-button {
+.laundry-sub-button {
     flex-grow: 1;
     background-color: var(--card-background);
     color: var(--text-color);
@@ -417,15 +414,27 @@ footer {
     transition: all 0.3s ease;
 }
 
-.laundry-button:hover {
+.laundry-sub-button:hover {
     background-color: var(--background-color);
     color: var(--primary-color);
 }
 
-.laundry-button.active {
+.laundry-sub-button.active {
     background-color: var(--primary-color);
     color: white;
     border-bottom: 3px solid var(--accent-color);
+}
+
+.laundry-content {
+    padding: 20px 0;
+}
+
+.laundry-order-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .laundry-actions {
@@ -478,15 +487,84 @@ footer {
     text-align: center;
     margin-top: 20px;
     animation: fadeIn 0.5s ease-in-out;
-    color: var(--accent-color); /* Color verde para el pulgar arriba */
+}
+
+.animation-container.success {
+    color: var(--accent-color);
 }
 
 .animation-container.delivered {
-    color: var(--secondary-color); /* Color azul para la animación final */
+    color: var(--secondary-color);
+}
+
+.animation-container.free-wash {
+    color: #f1c40f; /* Color para la animación de regalo */
 }
 
 .pulse-animation {
     animation: pulse 1s infinite;
+}
+
+/* ESTILOS DE LA BASE DE DATOS DE CLIENTES */
+.client-list-container {
+    list-style: none;
+    padding: 0;
+}
+
+.client-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease-in-out;
+}
+
+.client-list-item:hover {
+    background-color: #f8f8f8;
+}
+
+.client-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.client-info i {
+    font-size: 1.5em;
+    color: var(--secondary-color);
+}
+
+.client-name {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.client-progress {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 150px;
+}
+
+.progress-bar-container {
+    width: 100px;
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--accent-color);
+    transition: width 0.3s ease-in-out;
+}
+
+.loads-count-text {
+    font-size: 0.9em;
+    color: var(--text-color);
+    white-space: nowrap;
 }
 
 .laundry-status-pending { color: #f39c12; }
