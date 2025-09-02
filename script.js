@@ -18,7 +18,7 @@ const db = getFirestore(app);
 window.db = db;
 
 // Pega tu código Base64 del logo aquí.
-const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAA... (código muy largo)";
+const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAAABCAYAAAAaXW7qAAAAeUlEQVR4nO3BMQEAAADCoPVPbgpb+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4A8E0QAB6h+eQAAAAABJRU5ErkJggg==";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definición de la función de utilidad al inicio del script
@@ -56,6 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plateEntryInput = document.getElementById('plate-entry');
     const plateLabel = document.getElementById('plate-label');
     const otherPriceLabel = document.getElementById('other-price-label');
+    const vehicleSearchInput = document.getElementById('vehicle-search-input');
+    const laundrySearchInput = document.getElementById('laundry-search-input');
 
     // Definición de elementos del DOM de lavandería
     const laundryEntryForm = document.getElementById('laundry-entry-form');
@@ -98,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
     let activeLaundryOrders = [];
+    let deliveredLaundryOrders = []; // Nuevo array para los pedidos entregados
 
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
@@ -119,17 +122,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
     };
 
-    const updateActiveVehiclesList = (filterType = 'all') => {
+    const updateActiveVehiclesList = (filterType = 'all', searchTerm = '') => {
         activeVehiclesList.innerHTML = '';
         const filteredVehicles = activeVehicles.filter(v => {
-            if (filterType === 'all') return true;
-            if (filterType === 'mensualidad') {
-                return v.type.includes('mensualidad');
-            }
-            if (filterType === 'otros-noche') {
-                return v.type.includes('otros-noche');
-            }
-            return v.type === filterType;
+            const matchesFilter = (filterType === 'all') || 
+                                (filterType === 'mensualidad' && v.type.includes('mensualidad')) ||
+                                (filterType === 'otros-noche' && v.type.includes('otros-noche')) ||
+                                (v.type === filterType);
+            const matchesSearch = v.plate.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesFilter && matchesSearch;
         });
 
         if (filteredVehicles.length === 0) {
@@ -154,29 +155,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const updateActiveLaundryList = () => {
+    const updateActiveLaundryList = (searchTerm = '') => {
         laundryList.innerHTML = '';
-        if (activeLaundryOrders.length === 0) {
+        const filteredOrders = activeLaundryOrders.filter(order => {
+            const matchesSearch = order.clientName.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesSearch;
+        });
+
+        if (filteredOrders.length === 0) {
             laundryList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay pedidos de lavandería activos.</li>';
         } else {
-            activeLaundryOrders.forEach(order => {
+            filteredOrders.forEach(order => {
                 const li = document.createElement('li');
                 const statusClass = `laundry-status-${order.status}`;
                 const statusText = order.status === 'pending' ? 'Pendiente' : (order.status === 'ready' ? 'Lista' : 'Entregada');
-                const actionButtons = `
-                    <button class="status-button ready-button" data-id="${order.id}" ${order.status === 'ready' ? 'disabled' : ''}>
-                        <i class="fas fa-check-circle"></i> Lista
-                    </button>
-                    <button class="status-button delivered-button" data-id="${order.id}" ${order.status !== 'ready' ? 'disabled' : ''}>
-                        <i class="fas fa-handshake"></i> Entregada
-                    </button>
-                `;
+                
+                const promotionInfo = order.isFree ? `<span class="laundry-promotion-badge"><i class="fas fa-gift"></i> ¡Lavado Gratis!</span>` : '';
+                
+                let actionButtons = '';
+                if (order.status === 'delivered') {
+                    actionButtons = `<button class="download-invoice-button" data-id="${order.id}"><i class="fas fa-file-invoice"></i> Descargar Factura</button>`;
+                } else {
+                    actionButtons = `
+                        <button class="status-button ready-button" data-id="${order.id}" ${order.status === 'ready' ? 'disabled' : ''}>
+                            <i class="fas fa-check-circle"></i> Lista
+                        </button>
+                        <button class="status-button delivered-button" data-id="${order.id}" ${order.status !== 'ready' ? 'disabled' : ''}>
+                            <i class="fas fa-handshake"></i> Entregada
+                        </button>
+                    `;
+                }
 
                 li.innerHTML = `
                     <span>Cliente: <strong>${order.clientName}</strong></span>
                     <span>Lavadoras: ${order.loads}</span>
                     <span>Entrada: ${new Date(order.entryTime).toLocaleString()}</span>
-                    <span>Estado: <strong class="${statusClass}">${statusText}</strong></span>
+                    <span>Estado: <strong class="${statusClass}">${statusText}</strong> ${promotionInfo}</span>
                     <div class="laundry-actions">${actionButtons}</div>
                 `;
                 laundryList.appendChild(li);
@@ -209,15 +223,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                             costoOriginal: originalCost,
                             isFree: order.isFree
                         };
-                        localStorage.setItem('lastLaundryReceipt', JSON.stringify(receiptData));
                         
-                        // Elimina el pedido de la base de datos
-                        await deleteDoc(doc(db, "laundryOrders", id));
+                        // Actualiza el estado a 'delivered' en lugar de eliminarlo
+                        await updateDoc(doc(db, "laundryOrders", id), { status: 'delivered', ...receiptData });
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
                         loadData();
+                    }
+                });
+            });
 
-                        // Generar PDF
+            document.querySelectorAll('.download-invoice-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const order = activeLaundryOrders.find(o => o.id === id);
+                    if (order) {
+                        const receiptData = {
+                            clientName: order.clientName,
+                            loads: order.loads,
+                            entryTime: order.entryTime,
+                            exitTime: order.exitTime,
+                            costoFinal: order.costoFinal,
+                            costoOriginal: order.costoOriginal,
+                            isFree: order.isFree
+                        };
                         generateLaundryReceipt(receiptData);
                     }
                 });
@@ -225,6 +254,84 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     
+    // Función para generar la factura en PDF
+    const generateLaundryReceipt = (data) => {
+        const doc = new jsPDF();
+        const currentDate = new Date().toLocaleDateString('es-CO');
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+
+        // Logo y título
+        doc.addImage(logoBase64, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 62, 80);
+        doc.text("Factura de Lavandería", 105, 20, null, null, 'center');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Parqueadero y Lavandería El Reloj", 105, 28, null, null, 'center');
+        doc.text(`Fecha de Emisión: ${currentDate}`, 105, 35, null, null, 'center');
+
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, 190, 45);
+
+        // Información del cliente y pedido
+        let y = 55;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('Detalles del Pedido', 20, y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Cliente: ${data.clientName}`, 20, y);
+        y += 7;
+        doc.text(`Cantidad de lavadoras: ${data.loads}`, 20, y);
+        y += 7;
+        doc.text(`Fecha de Entrada: ${new Date(data.entryTime).toLocaleString('es-CO')}`, 20, y);
+        y += 7;
+        doc.text(`Fecha de Salida: ${new Date(data.exitTime).toLocaleString('es-CO')}`, 20, y);
+        y += 10;
+
+        // Detalles de costo y promoción
+        doc.setLineWidth(0.3);
+        doc.line(20, y, 190, y);
+        y += 10;
+        
+        if (data.isFree) {
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(46, 204, 113); // Color verde
+            doc.text('¡LAVADO GRATIS!', 105, y, null, null, 'center');
+            y += 7;
+            doc.text('Aplica promoción por cliente frecuente.', 105, y, null, null, 'center');
+            y += 10;
+        } else {
+            doc.text(`Costo por lavadora: $${formatNumber(LAVANDERIA_PRECIO_KG_9)} COP`, 20, y);
+            y += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text(`TOTAL A PAGAR: $${formatNumber(data.costoFinal)} COP`, 20, y);
+        y += 20;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+
+        // Pie de página
+        doc.line(20, y, 190, y);
+        y += 10;
+        doc.text("Gracias por preferir nuestros servicios.", 105, y, null, null, 'center');
+        y += 5;
+        doc.text("Parqueadero El Reloj - Medellín, Colombia", 105, y, null, null, 'center');
+
+        // Guardar el documento
+        doc.save(`Factura_Lavanderia_${data.clientName.replace(/ /g, '_')}.pdf`);
+    };
+
     // Cargar tarifas y vehículos desde localStorage y Firestore
     const loadData = async () => {
         // Cargar datos de parqueadero
@@ -285,8 +392,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const filterType = button.dataset.filter;
-            updateActiveVehiclesList(filterType);
+            updateActiveVehiclesList(filterType, vehicleSearchInput.value);
         });
+    });
+
+    // Event listener para el buscador de vehículos
+    vehicleSearchInput.addEventListener('input', (e) => {
+        const currentFilter = document.querySelector('.filter-button.active').dataset.filter;
+        updateActiveVehiclesList(currentFilter, e.target.value);
+    });
+
+    // Event listener para el buscador de lavandería
+    laundrySearchInput.addEventListener('input', (e) => {
+        updateActiveLaundryList(e.target.value);
     });
 
     // Manejo de pestañas principales
@@ -306,10 +424,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetTabId === 'active-vehicles-tab') {
                 updateActiveVehiclesList('all');
                 document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
+                vehicleSearchInput.value = '';
             }
             if (targetTabId === 'laundry-tab') {
                 updateActiveLaundryList();
                 document.querySelector('.laundry-button[data-laundry-tab="laundry-register-tab"]').click();
+                laundrySearchInput.value = '';
             }
         });
     });
@@ -456,10 +576,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
             return;
         }
-
         let otherVehicleSize = null;
         let otherPrice = null;
-
         if (type === 'otros-mensualidad' || type === 'otros-noche') {
             otherVehicleSize = othersVehicleSize.value;
             const priceValue = othersMonthlyPrice.value;
@@ -468,21 +586,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             otherPrice = parseNumber(priceValue);
-            
             const sizePrices = prices[type][otherVehicleSize];
             if (otherPrice < sizePrices.min || otherPrice > sizePrices.max) {
                 showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
                 return;
             }
         }
-        const newVehicle = {
-            plate,
-            description,
-            type,
-            entryTime: new Date().toISOString(),
-            price: otherPrice,
-            size: otherVehicleSize
-        };
+        const newVehicle = { plate, description, type, entryTime: new Date().toISOString(), price: otherPrice, size: otherVehicleSize };
         try {
             const docRef = await addDoc(collection(db, 'activeVehicles'), newVehicle);
             showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
@@ -519,294 +629,107 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
-        const diffInMs = exitTime - entryTime;
-        const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-        let totalCost = 0;
-        if (diffInMinutes <= 30) {
-            totalCost = 0;
-        } else if (diffInMinutes > 30 && diffInMinutes <= 60) {
-            totalCost = prices[vehicle.type].mediaHora;
-        } else {
-            const vehicleType = vehicle.type;
-            const pricePerHour = prices[vehicleType].hora;
-            const priceFor12Hours = prices[vehicleType].doceHoras;
-            const totalHours = Math.ceil(diffInMinutes / 60);
-            totalCost = totalHours * pricePerHour;
-            if (diffInMinutes >= 720) {
-                totalCost = priceFor12Hours;
+        const durationInMinutes = (exitTime - entryTime) / (1000 * 60);
+
+        let cost = 0;
+        const pricesByVehicle = prices[vehicle.type];
+        if (durationInMinutes <= 30) {
+            cost = pricesByVehicle.mediaHora;
+        } else if (durationInMinutes <= 720) { // 12 horas
+            const hours = Math.ceil(durationInMinutes / 60);
+            if (hours > 1 && hours < 12) {
+                cost = (hours - 1) * pricesByVehicle.hora + pricesByVehicle.hora;
+            } else {
+                cost = pricesByVehicle.hora;
             }
+        } else {
+            const days = Math.floor(durationInMinutes / (60 * 24));
+            const remainingMinutes = durationInMinutes % (60 * 24);
+            const remainingHours = Math.ceil(remainingMinutes / 60);
+            cost = days * pricesByVehicle.doceHoras + (remainingHours > 0 ? pricesByVehicle.doceHoras : 0);
         }
-        let originalCost = totalCost;
+        
+        let adjustment = 0;
         if (specialClientCheckbox.checked) {
-            const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
-            totalCost = originalCost + adjustmentValue;
-            if (adjustmentValue < 0) {
-                showNotification(`Descuento de $${formatNumber(Math.abs(adjustmentValue))} COP aplicado.`, 'info');
-            } else if (adjustmentValue > 0) {
-                showNotification(`Aumento de $${formatNumber(adjustmentValue)} COP aplicado.`, 'info');
+            const adjustmentValue = parseNumber(specialClientAdjustment.value);
+            if (!isNaN(adjustmentValue)) {
+                adjustment = adjustmentValue;
             }
-        } else {
-            notificationArea.style.display = 'none';
         }
-        currentCalculatedCost = totalCost;
-        exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
+        
+        currentCalculatedCost = Math.max(0, cost - adjustment);
+        
+        exitCostDisplay.innerHTML = `<p><strong>Costo Estimado:</strong> $${formatNumber(currentCalculatedCost)} COP</p>`;
+        exitCostDisplay.className = 'result-box';
+        exitCostDisplay.style.display = 'block';
     };
 
     specialClientCheckbox.addEventListener('change', updateCalculatedCost);
     specialClientAdjustment.addEventListener('input', updateCalculatedCost);
     document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
-    // Registrar salida y calcular costo
     exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicle = activeVehicles.find(v => v.plate === plate || v.description === plate);
+        const vehicle = activeVehicles.find(v => v.plate === plate);
+
         if (!vehicle) {
-            showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
+            showNotification('No se encontró un vehículo con esa placa/descripción.', 'error');
             return;
         }
-        const exitTime = new Date();
-        const entryTime = new Date(vehicle.entryTime);
-        const diffInMs = exitTime - entryTime;
-        const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-        let totalCost = 0;
-        let originalCost = 0;
-        const isSpecialClient = specialClientCheckbox.checked;
-        const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
-        let resultHTML = '';
-        let receiptData = {};
-        let displayPlate = vehicle.plate;
-        if (vehicle.type.includes('otros')) {
-            displayPlate = vehicle.description;
-        }
-        if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
-            let monthlyPrice = 0;
-            if (vehicle.type === 'mensualidad') {
-                monthlyPrice = prices.carro.mes;
-            } else if (vehicle.type === 'moto-mensualidad') {
-                monthlyPrice = prices.moto.mes;
-            } else {
-                monthlyPrice = vehicle.price;
-            }
-            const nextPaymentDate = new Date(vehicle.entryTime);
-            nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-            resultHTML = `
-                <p>Placa/Descripción: <strong>${displayPlate}</strong></p>
-                <p>Tipo: <strong>${vehicle.type}</strong></p>
-                <p>Valor mensualidad: <strong>$${formatNumber(monthlyPrice)} COP</strong></p>
-                <p>Día de pago próximo: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong></p>
-                <p class="info-message"><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
-            `;
-            totalCost = 0;
-            receiptData = {
-                plate: displayPlate,
-                type: vehicle.type,
-                entryTime,
-                exitTime,
-                costoFinal: 0,
-                descuento: 0,
-                esMensualidad: true,
-                costoOriginal: monthlyPrice,
-                proximoPago: nextPaymentDate
-            };
-        } else if (vehicle.type === 'otros-noche') {
-            const nightPrice = vehicle.price;
-            resultHTML = `
-                <p>Descripción: <strong>${displayPlate}</strong></p>
-                <p>Tipo: <strong>${vehicle.type}</strong></p>
-                <p>Valor por noche: <strong>$${formatNumber(nightPrice)} COP</strong></p>
-                <p class="info-message"><strong>Salida registrada. Tarifa plana nocturna.</strong></p>
-            `;
-            totalCost = nightPrice;
-            receiptData = {
-                plate: displayPlate,
-                type: vehicle.type,
-                entryTime,
-                exitTime,
-                costoFinal: totalCost,
-                esGratis: false,
-                esMensualidad: false,
-                esNoche: true,
-                costoOriginal: nightPrice
-            };
-
-        } else { // Carros y Motos por hora
-            if (diffInMinutes <= 30) {
-                totalCost = 0;
-                resultHTML = `
-                    <p>Placa: <strong>${vehicle.plate}</strong></p>
-                    <p>Tipo: <strong>${vehicle.type}</strong></p>
-                    <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
-                    <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
-                    <p>Total a pagar: <strong>$0 COP</strong></p>
-                `;
-                receiptData = {
-                    plate: vehicle.plate,
-                    type: vehicle.type,
-                    entryTime,
-                    exitTime,
-                    costoFinal: 0,
-                    descuento: 0,
-                    esGratis: true,
-                    tiempoEstadia: `${diffInMinutes} minutos`
-                };
-
-            } else {
-                const vehicleType = vehicle.type;
-                if (diffInMinutes <= 60) {
-                    totalCost = prices[vehicleType].mediaHora;
-                } else {
-                    const totalHours = Math.ceil(diffInMinutes / 60);
-                    totalCost = totalHours * prices[vehicleType].hora;
-                }
-                if (diffInMinutes >= 720) {
-                    totalCost = prices[vehicleType].doceHoras;
-                }
-                originalCost = totalCost;
-                if (isSpecialClient) {
-                    totalCost = originalCost + adjustmentValue;
-                }
-                const totalHoursDisplay = Math.floor(diffInMinutes / 60);
-                const totalMinutesDisplay = diffInMinutes % 60;
-                resultHTML = `
-                    <p>Placa: <strong>${vehicle.plate}</strong></p>
-                    <p>Tipo: <strong>${vehicle.type}</strong></p>
-                    <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
-                    <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
-                `;
-                if (isSpecialClient) {
-                    resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
-                }
-                resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
-                receiptData = {
-                    plate: vehicle.plate,
-                    type: vehicle.type,
-                    entryTime,
-                    exitTime,
-                    costoFinal: totalCost,
-                    descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
-                    esGratis: false,
-                    esMensualidad: false,
-                    costoOriginal: originalCost,
-                    ajusteEspecial: adjustmentValue,
-                    tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
-                };
-            }
-        }
-        resultContent.innerHTML = resultHTML;
-        resultDiv.style.display = 'block';
-        resultDiv.classList.add('fade-in');
+        
         try {
+            // Elimina el documento de la base de datos
             await deleteDoc(doc(db, "activeVehicles", vehicle.id));
-            showNotification(`Salida de ${displayPlate} registrada.`, 'success');
+
+            // Prepara los datos del recibo
+            const exitTime = new Date();
+            const entryTime = new Date(vehicle.entryTime);
+            const durationInMinutes = (exitTime - entryTime) / (1000 * 60);
+            
+            const cost = ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type) ? (vehicle.price || prices[vehicle.type][vehicle.size].mes || prices[vehicle.type][vehicle.size].noche) : currentCalculatedCost;
+
+            const receiptData = {
+                plate: vehicle.plate,
+                type: vehicle.type,
+                entryTime: vehicle.entryTime,
+                exitTime: exitTime.toISOString(),
+                duration: `${Math.floor(durationInMinutes / 60)}h ${Math.round(durationInMinutes % 60)}min`,
+                cost: cost,
+                description: vehicle.description || vehicle.plate
+            };
+
+            // Guarda la información del recibo en localStorage para usarla en el botón de impresión
+            localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
+
+            // Muestra el resultado
+            let resultHtml = `<h3>Recibo</h3>`;
+            if (vehicle.type.includes('otros')) {
+                resultHtml += `<p><strong>Descripción:</strong> ${receiptData.description}</p>`;
+            } else {
+                resultHtml += `<p><strong>Placa:</strong> ${receiptData.plate}</p>`;
+            }
+            
+            if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
+                resultHtml += `<p><strong>Tipo:</strong> ${vehicle.type}</p>`;
+                resultHtml += `<p><strong>Costo Mensual:</strong> $${formatNumber(cost)} COP</p>`;
+            } else {
+                resultHtml += `<p><strong>Tipo:</strong> ${vehicle.type}</p>`;
+                resultHtml += `<p><strong>Duración:</strong> ${receiptData.duration}</p>`;
+                resultHtml += `<p><strong>Costo Final:</strong> $${formatNumber(cost)} COP</p>`;
+            }
+            resultContent.innerHTML = resultHtml;
+            resultDiv.style.display = 'block';
+
+            showNotification('Salida de vehículo registrada exitosamente.', 'success');
+            exitForm.reset();
+            specialClientSection.style.display = 'none';
+            exitCostDisplay.innerHTML = '';
             await loadData();
         } catch (e) {
             console.error("Error al eliminar documento: ", e);
             showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
         }
-        exitForm.reset();
-        specialClientCheckbox.checked = false;
-        specialClientSection.style.display = 'none';
-        specialClientAdjustment.value = '';
-        exitCostDisplay.innerHTML = '';
-        localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
-    });
-
-    // Descargar recibo de pago en PDF
-    printReceiptBtn.addEventListener('click', () => {
-        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
-        if (!receiptData) {
-            showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
-            return;
-        }
-        const doc = new jsPDF();
-        doc.setFont('helvetica');
-        doc.setTextColor(44, 62, 80);
-        const imgWidth = 40;
-        const imgHeight = 40;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const xPos = (pageWidth / 2) - (imgWidth / 2);
-        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
-        doc.setFontSize(22);
-        doc.text('Parqueadero El Reloj', 105, 50, null, null, 'center');
-        doc.setFontSize(16);
-        if (receiptData.esGratis) {
-            doc.text('Salida Gratis', 105, 60, null, null, 'center');
-        } else {
-            doc.text('Recibo de Pago', 105, 60, null, null, 'center');
-        }
-        doc.setDrawColor(200, 200, 200);
-        doc.line(20, 65, 190, 65);
-        let y = 75;
-        doc.setFontSize(12);
-        doc.setTextColor(52, 73, 94);
-        if (receiptData.esNoche || receiptData.esMensualidad) {
-            doc.text(`Descripción: ${receiptData.plate}`, 20, y);
-            y += 7;
-        } else {
-            doc.text(`Placa: ${receiptData.plate}`, 20, y);
-            y += 7;
-        }
-        doc.text(`Tipo de Vehículo: ${receiptData.type.replace('-', ' ').toUpperCase()}`, 20, y);
-        y += 10;
-        doc.text(`Fecha de Entrada: ${new Date(receiptData.entryTime).toLocaleString('es-CO')}`, 20, y);
-        y += 7;
-        doc.text(`Fecha de Salida: ${new Date(receiptData.exitTime).toLocaleString('es-CO')}`, 20, y);
-        y += 10;
-        if (receiptData.esGratis) {
-            doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
-            y += 10;
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(231, 76, 60); 
-            doc.text('NO COMPLETÓ LA MEDIA HORA', 105, y, null, null, 'center');
-            y += 7;
-            doc.text('SU SALIDA ES GRATIS', 105, y, null, null, 'center');
-            y += 10;
-            doc.setFontSize(16);
-            doc.text('TOTAL A PAGAR: $0 COP', 105, y, null, null, 'center');
-            y += 20;
-        } else if (receiptData.esMensualidad) {
-            doc.text(`Tipo de Servicio: Mensualidad`, 20, y);
-            y += 7;
-            doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
-            y += 7;
-            doc.text(`Próximo Día de Pago: ${new Date(receiptData.proximoPago).toLocaleDateString('es-CO')}`, 20, y);
-            y += 10;
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(52, 152, 219);
-            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
-            y += 20;
-        } else if (receiptData.esNoche) {
-             doc.text(`Tarifa Plana por Noche: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
-            y += 10;
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(52, 152, 219);
-            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
-            y += 20;
-        } else {
-            doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
-            y += 7;
-            doc.text(`Costo Original: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
-            y += 7;
-            doc.text(`Ajuste Especial: ${receiptData.ajusteEspecial >= 0 ? '+' : ''}$${formatNumber(receiptData.ajusteEspecial)} COP`, 20, y);
-            y += 10;
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(52, 152, 219);
-            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
-            y += 20;
-        }
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text('¡Gracias por su visita!', 105, y, null, null, 'center');
-        y += 5;
-        doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
-        doc.save(`Recibo_Parqueadero_${receiptData.plate}.pdf`);
-        showNotification('Recibo PDF generado con éxito.', 'success');
     });
 
     // Registrar pedido de lavandería
@@ -815,113 +738,123 @@ document.addEventListener('DOMContentLoaded', async () => {
         const clientName = laundryClientName.value.trim();
         const loads = parseInt(laundryLoads.value);
 
-        const clientsCol = collection(db, 'laundryClients');
-        const clientQuery = query(clientsCol, where("name", "==", clientName));
-        const clientSnapshot = await getDocs(clientQuery);
+        // Contar el número de lavados pagados del cliente
+        const laundryHistoryCol = collection(db, 'laundryHistory');
+        const q = query(laundryHistoryCol, where("clientName", "==", clientName));
+        const historySnapshot = await getDocs(q);
+        const paidWashesCount = historySnapshot.docs.filter(doc => !doc.data().isFree).length;
         
-        let isFree = false;
-        let clientDocId = null;
-
-        if (clientSnapshot.empty) {
-            // Cliente nuevo, crea el perfil
-            const newClientData = { name: clientName, loadsCount: loads };
-            const docRef = await addDoc(clientsCol, newClientData);
-            clientDocId = docRef.id;
-            showNotification(`Cliente nuevo registrado: ${clientName}.`, 'info');
-        } else {
-            // Cliente existente, actualiza el contador de lavadas
-            const clientDoc = clientSnapshot.docs[0];
-            const currentLoads = clientDoc.data().loadsCount;
-            clientDocId = clientDoc.id;
-
-            if (currentLoads >= PROMOCION_LAVADOS_GRATIS) {
-                isFree = true;
-                // Reinicia el contador para el próximo ciclo
-                await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: loads });
-                showNotification(`¡Lavado gratis para ${clientName}! Se ha aplicado la promoción.`, 'success');
-            } else {
-                // Incrementa el contador
-                await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: currentLoads + loads });
-                showNotification(`Se han sumado ${loads} lavadas a la cuenta de ${clientName}.`, 'info');
-            }
-        }
+        const isFreeWash = (paidWashesCount >= PROMOCION_LAVADOS_GRATIS);
         
-        const newOrder = {
+        let newOrder = {
             clientName,
             loads,
             entryTime: new Date().toISOString(),
             status: 'pending',
-            isFree: isFree,
-            clientDocId: clientDocId
+            isFree: isFreeWash
         };
 
-        try {
-            await addDoc(collection(db, 'laundryOrders'), newOrder);
-            showNotification(`Pedido de lavandería para ${clientName} registrado.`, 'success');
-            laundryEntryForm.reset();
-            laundryLoads.value = '1';
-            await loadData();
-        } catch (e) {
-            console.error("Error al añadir pedido: ", e);
-            showNotification("Error al registrar el pedido de lavandería.", 'error');
+        if (isFreeWash) {
+            // Registrar el lavado gratis en el historial y el pedido activo
+            try {
+                // Registro del lavado gratis
+                await addDoc(collection(db, 'laundryHistory'), { ...newOrder, exitTime: new Date().toISOString(), costoFinal: 0, costoOriginal: loads * LAVANDERIA_PRECIO_KG_9 });
+                
+                // Elimina el pedido de la lista de activos
+                newOrder.status = 'delivered';
+                newOrder.costoFinal = 0;
+                newOrder.costoOriginal = loads * LAVANDERIA_PRECIO_KG_9;
+                
+                // Simula la descarga del recibo
+                generateLaundryReceipt(newOrder);
+
+                showNotification(`¡${clientName} recibe un lavado gratis! Pedido registrado y facturado.`, 'success');
+            } catch (e) {
+                console.error("Error al registrar el lavado gratis: ", e);
+                showNotification("Error al registrar el pedido. Por favor, intente de nuevo.", 'error');
+            }
+        } else {
+            // Si no es gratis, se registra como pedido activo y pendiente
+            try {
+                await addDoc(collection(db, 'laundryOrders'), newOrder);
+                showNotification('Pedido de lavandería registrado.', 'success');
+            } catch (e) {
+                console.error("Error al añadir documento: ", e);
+                showNotification("Error al registrar el pedido. Por favor, intente de nuevo.", 'error');
+            }
+        }
+        
+        laundryEntryForm.reset();
+        await loadData();
+    });
+
+    // Cargar los datos iniciales al cargar la página
+    loadData();
+
+    // Función para generar recibo de parqueadero
+    const generateParkingReceipt = (data) => {
+        const doc = new jsPDF();
+        const currentDate = new Date().toLocaleDateString('es-CO');
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        
+        doc.addImage(logoBase64, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 62, 80);
+        doc.text("Recibo de Parqueadero", 105, 20, null, null, 'center');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Parqueadero El Reloj", 105, 28, null, null, 'center');
+        doc.text(`Fecha de Emisión: ${currentDate}`, 105, 35, null, null, 'center');
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, 190, 45);
+
+        let y = 55;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('Detalles del Vehículo', 20, y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Placa/Descripción: ${data.description}`, 20, y);
+        y += 7;
+        doc.text(`Tipo: ${data.type}`, 20, y);
+        y += 7;
+        doc.text(`Hora de Entrada: ${new Date(data.entryTime).toLocaleString('es-CO')}`, 20, y);
+        y += 7;
+        doc.text(`Hora de Salida: ${new Date(data.exitTime).toLocaleString('es-CO')}`, 20, y);
+        y += 10;
+        
+        doc.setLineWidth(0.3);
+        doc.line(20, y, 190, y);
+        y += 10;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 62, 80);
+        doc.text(`Total a Pagar: $${formatNumber(data.cost)} COP`, 20, y);
+        y += 20;
+
+        doc.line(20, y, 190, y);
+        y += 10;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Gracias por preferir nuestros servicios.", 105, y, null, null, 'center');
+        y += 5;
+        doc.text("Parqueadero El Reloj - Medellín, Colombia", 105, y, null, null, 'center');
+
+        doc.save(`Recibo_Parqueadero_${data.plate || data.description}.pdf`);
+    };
+
+    printReceiptBtn.addEventListener('click', () => {
+        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
+        if (receiptData) {
+            generateParkingReceipt(receiptData);
+        } else {
+            showNotification('No hay un recibo reciente para descargar.', 'error');
         }
     });
 
-    // Función para generar recibo de lavandería
-    const generateLaundryReceipt = (data) => {
-        const doc = new jsPDF();
-        doc.setFont('helvetica');
-        doc.setTextColor(44, 62, 80);
-        const imgWidth = 40;
-        const imgHeight = 40;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const xPos = (pageWidth / 2) - (imgWidth / 2);
-        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
-        doc.setFontSize(22);
-        doc.text('Parqueadero y Lavandería', 105, 50, null, null, 'center');
-        doc.setFontSize(16);
-        doc.text('Recibo de Lavandería', 105, 60, null, null, 'center');
-        doc.setDrawColor(200, 200, 200);
-        doc.line(20, 65, 190, 65);
-        let y = 75;
-        doc.setFontSize(12);
-        doc.setTextColor(52, 73, 94);
-        doc.text(`Cliente: ${data.clientName}`, 20, y);
-        y += 7;
-        doc.text(`Cantidad de lavadoras: ${data.loads}`, 20, y);
-        y += 7;
-        doc.text(`Fecha de Entrada: ${new Date(data.entryTime).toLocaleString('es-CO')}`, 20, y);
-        y += 7;
-        doc.text(`Fecha de Salida: ${new Date(data.exitTime).toLocaleString('es-CO')}`, 20, y);
-        y += 10;
-
-        if (data.isFree) {
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(46, 204, 113); // Color verde
-            doc.text('¡LAVADO GRATIS!', 105, y, null, null, 'center');
-            y += 7;
-            doc.text('Aplica promoción por cliente frecuente.', 105, y, null, null, 'center');
-            y += 10;
-        } else {
-            doc.text(`Costo por lavadora: $${formatNumber(LAVANDERIA_PRECIO_KG_9)} COP`, 20, y);
-            y += 10;
-        }
-
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(52, 152, 219);
-        doc.text(`TOTAL A PAGAR: $${formatNumber(data.costoFinal)} COP`, 20, y);
-        y += 20;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text('¡Gracias por su preferencia!', 105, y, null, null, 'center');
-        y += 5;
-        doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
-        doc.save(`Recibo_Lavanderia_${data.clientName}.pdf`);
-    };
-
-    // Llamada inicial para cargar los datos y actualizar la lista de vehículos.
-    await loadData();
 });
