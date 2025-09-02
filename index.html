@@ -57,6 +57,7 @@
                                 <option value="mensualidad">Carro (Mensualidad)</option>
                                 <option value="moto-mensualidad">Moto (Mensualidad)</option>
                                 <option value="otros-mensualidad">Otros Vehículos (Mensualidad)</option>
+                                <option value="otros-noche">Otros Vehículos (Por Noche)</option>
                             </select>
                         </div>
                         <div id="others-type-container" style="display: none;">
@@ -114,6 +115,7 @@
                         <button class="filter-button" data-filter="carro">Carros</button>
                         <button class="filter-button" data-filter="moto">Motos</button>
                         <button class="filter-button" data-filter="mensualidad">Mensualidad</button>
+                        <button class="filter-button" data-filter="otros-noche">Por Noche</button>
                     </div>
                     <ul id="active-vehicles">
                         <li>No hay vehículos activos.</li>
@@ -212,6 +214,56 @@
                                     <div class="input-group">
                                         <label>Precio Defecto:</label>
                                         <input type="number" id="other-large-default" value="250000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="other-vehicle-prices">
+                            <h4>Otros Vehículos (Por Noche)</h4>
+                            <div class="size-prices-grid">
+                                <div class="size-card">
+                                    <h5>Pequeño</h5>
+                                    <div class="input-group">
+                                        <label>Rango Mín:</label>
+                                        <input type="number" id="other-night-small-min" value="10000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Rango Máx:</label>
+                                        <input type="number" id="other-night-small-max" value="15000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Precio Defecto:</label>
+                                        <input type="number" id="other-night-small-default" value="12000">
+                                    </div>
+                                </div>
+                                <div class="size-card">
+                                    <h5>Mediano</h5>
+                                    <div class="input-group">
+                                        <label>Rango Mín:</label>
+                                        <input type="number" id="other-night-medium-min" value="15100">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Rango Máx:</label>
+                                        <input type="number" id="other-night-medium-max" value="20000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Precio Defecto:</label>
+                                        <input type="number" id="other-night-medium-default" value="18000">
+                                    </div>
+                                </div>
+                                <div class="size-card">
+                                    <h5>Grande</h5>
+                                    <div class="input-group">
+                                        <label>Rango Mín:</label>
+                                        <input type="number" id="other-night-large-min" value="20100">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Rango Máx:</label>
+                                        <input type="number" id="other-night-large-max" value="30000">
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Precio Defecto:</label>
+                                        <input type="number" id="other-night-large-default" value="25000">
                                     </div>
                                 </div>
                             </div>
