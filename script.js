@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationArea = document.getElementById('notification-area');
     const loginMessage = document.getElementById('login-message');
     const specialClientCheckbox = document.getElementById('special-client');
+    const othersTypeContainer = document.getElementById('others-type-container');
+    const vehicleTypeEntry = document.getElementById('type-entry');
+    const othersVehicleSize = document.getElementById('others-vehicle-size');
+    const othersMonthlyPrice = document.getElementById('others-monthly-price');
+    const specialClientSection = document.getElementById('special-client-section');
+    const specialClientAdjustment = document.getElementById('special-client-adjustment');
 
     // Tarifas iniciales
     let prices = {
@@ -37,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mes: 150000 
         },
         'otros-mensualidad': {
-            mes: 200000
+            'pequeño': { min: 100000, max: 150000, mes: 120000 },
+            'mediano': { min: 151000, max: 200000, mes: 180000 },
+            'grande': { min: 201000, max: 300000, mes: 250000 }
         }
     };
 
@@ -80,8 +88,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const bikeMonthInput = document.getElementById('bike-month');
             if (bikeMonthInput && prices.moto && prices.moto.mes !== undefined) bikeMonthInput.value = formatNumber(prices.moto.mes);
     
-            const foodMonthInput = document.getElementById('food-month');
-            if (foodMonthInput && prices['otros-mensualidad'] && prices['otros-mensualidad'].mes !== undefined) foodMonthInput.value = formatNumber(prices['otros-mensualidad'].mes);
+            if (prices['otros-mensualidad']) {
+                document.getElementById('other-small-min').value = formatNumber(prices['otros-mensualidad'].pequeño.min);
+                document.getElementById('other-small-max').value = formatNumber(prices['otros-mensualidad'].pequeño.max);
+                document.getElementById('other-small-default').value = formatNumber(prices['otros-mensualidad'].pequeño.mes);
+                document.getElementById('other-medium-min').value = formatNumber(prices['otros-mensualidad'].mediano.min);
+                document.getElementById('other-medium-max').value = formatNumber(prices['otros-mensualidad'].mediano.max);
+                document.getElementById('other-medium-default').value = formatNumber(prices['otros-mensualidad'].mediano.mes);
+                document.getElementById('other-large-min').value = formatNumber(prices['otros-mensualidad'].grande.min);
+                document.getElementById('other-large-max').value = formatNumber(prices['otros-mensualidad'].grande.max);
+                document.getElementById('other-large-default').value = formatNumber(prices['otros-mensualidad'].grande.mes);
+            }
         }
 
         activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
@@ -99,18 +116,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     };
 
-    const updateActiveVehiclesList = () => {
+    const updateActiveVehiclesList = (filterType = 'all') => {
         activeVehiclesList.innerHTML = '';
-        if (activeVehicles.length === 0) {
-            activeVehiclesList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay vehículos activos.</li>';
+        const filteredVehicles = activeVehicles.filter(v => {
+            if (filterType === 'all') return true;
+            if (filterType === 'mensualidad') {
+                return v.type.includes('mensualidad');
+            }
+            return v.type === filterType;
+        });
+
+        if (filteredVehicles.length === 0) {
+            activeVehiclesList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay vehículos activos de este tipo.</li>';
         } else {
-            activeVehicles.forEach(v => {
+            filteredVehicles.forEach(v => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span>Placa: <strong>${v.plate.toUpperCase()}</strong></span> <span>Tipo: ${v.type}</span> <span>Entrada: ${new Date(v.entryTime).toLocaleString()}</span>`;
+                let extraInfo = '';
+                if (v.type.includes('mensualidad')) {
+                    const entryDate = new Date(v.entryTime);
+                    const nextPaymentDate = new Date(entryDate);
+                    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+                    extraInfo = `<br>Próximo pago: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong>`;
+                }
+                li.innerHTML = `<span>Placa: <strong>${v.plate.toUpperCase()}</strong></span> <span>Tipo: ${v.type}</span> <span>Entrada: ${new Date(v.entryTime).toLocaleString()}${extraInfo}</span>`;
                 activeVehiclesList.appendChild(li);
             });
         }
     };
+    
+    // Filtros de vehículos activos
+    document.querySelectorAll('.filter-button').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const filterType = button.dataset.filter;
+            updateActiveVehiclesList(filterType);
+        });
+    });
 
     // Manejo de pestañas
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -127,7 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(targetTabId).classList.add('fade-in');
 
             if (targetTabId === 'active-vehicles-tab') {
-                updateActiveVehiclesList();
+                updateActiveVehiclesList('all');
+                document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
             }
         });
     });
@@ -157,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             adminTabButton.style.display = 'none';
         }
         document.querySelector('.tab-button[data-tab="entry-exit-tab"]').click();
-        updateActiveVehiclesList();
+        updateActiveVehiclesList('all');
     };
 
     const logout = () => {
@@ -210,12 +253,29 @@ document.addEventListener('DOMContentLoaded', () => {
         prices.moto.mes = parseValue('bike-month');
 
         if (!prices['otros-mensualidad']) prices['otros-mensualidad'] = {};
-        prices['otros-mensualidad'].mes = parseValue('food-month');
+        prices['otros-mensualidad'].pequeño.min = parseValue('other-small-min');
+        prices['otros-mensualidad'].pequeño.max = parseValue('other-small-max');
+        prices['otros-mensualidad'].pequeño.mes = parseValue('other-small-default');
+        prices['otros-mensualidad'].mediano.min = parseValue('other-medium-min');
+        prices['otros-mensualidad'].mediano.max = parseValue('other-medium-max');
+        prices['otros-mensualidad'].mediano.mes = parseValue('other-medium-default');
+        prices['otros-mensualidad'].grande.min = parseValue('other-large-min');
+        prices['otros-mensualidad'].grande.max = parseValue('other-large-max');
+        prices['otros-mensualidad'].grande.mes = parseValue('other-large-default');
         
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
         
         loadData();
+    });
+
+    // Mostrar/ocultar campos de otros vehículos
+    vehicleTypeEntry.addEventListener('change', () => {
+        if (vehicleTypeEntry.value === 'otros-mensualidad') {
+            othersTypeContainer.style.display = 'flex';
+        } else {
+            othersTypeContainer.style.display = 'none';
+        }
     });
 
     // Registrar entrada de vehículo
@@ -229,17 +289,96 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        let otherVehicleSize = null;
+        let otherMonthlyPrice = null;
+        if (type === 'otros-mensualidad') {
+            otherVehicleSize = othersVehicleSize.value;
+            otherMonthlyPrice = parseInt(othersMonthlyPrice.value.replace(/\./g, '')) || 0;
+            const sizePrices = prices['otros-mensualidad'][otherVehicleSize];
+            if (otherMonthlyPrice < sizePrices.min || otherMonthlyPrice > sizePrices.max) {
+                 showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
+                return;
+            }
+        }
+
         const newVehicle = {
             plate,
             type,
-            entryTime: new Date().toISOString()
+            entryTime: new Date().toISOString(),
+            monthlyPrice: otherMonthlyPrice,
+            size: otherVehicleSize
         };
         activeVehicles.push(newVehicle);
         localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
         showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
         entryForm.reset();
+        othersTypeContainer.style.display = 'none';
         updateActiveVehiclesList();
     });
+
+    // Controlar visibilidad de la sección de cliente especial
+    let currentCalculatedCost = 0;
+    document.getElementById('plate-exit').addEventListener('input', () => {
+        const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
+        const vehicle = activeVehicles.find(v => v.plate === plate);
+        if (vehicle && !['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
+            specialClientSection.style.display = 'flex';
+        } else {
+            specialClientSection.style.display = 'none';
+            specialClientCheckbox.checked = false;
+        }
+    });
+
+    // Calcular costo en tiempo real con ajustes de cliente especial
+    const updateCalculatedCost = () => {
+        const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
+        const vehicle = activeVehicles.find(v => v.plate === plate);
+        if (!vehicle) return;
+
+        const exitTime = new Date();
+        const entryTime = new Date(vehicle.entryTime);
+        const diffInMs = exitTime - entryTime;
+        const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+
+        let totalCost = 0;
+        let originalCost = 0;
+
+        if (diffInMinutes <= 30) {
+            totalCost = 0;
+        } else {
+            const vehicleType = vehicle.type;
+            const pricePerHour = prices[vehicleType].hora;
+            const priceFor12Hours = prices[vehicleType].doceHoras;
+            
+            const totalHours = Math.ceil(diffInMinutes / 60);
+            totalCost = totalHours * pricePerHour;
+            
+            if (diffInMinutes >= 720) {
+                totalCost = priceFor12Hours;
+            }
+        }
+        originalCost = totalCost;
+
+        if (specialClientCheckbox.checked) {
+            const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
+            totalCost = originalCost + adjustmentValue;
+            if (adjustmentValue < 0) {
+                showNotification(`Descuento de $${formatNumber(Math.abs(adjustmentValue))} COP aplicado.`, 'info');
+            } else if (adjustmentValue > 0) {
+                showNotification(`Aumento de $${formatNumber(adjustmentValue)} COP aplicado.`, 'info');
+            }
+        } else {
+            notificationArea.style.display = 'none';
+        }
+
+        currentCalculatedCost = totalCost;
+        document.getElementById('exit-cost-display').innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
+    };
+
+    specialClientCheckbox.addEventListener('change', updateCalculatedCost);
+    specialClientAdjustment.addEventListener('input', updateCalculatedCost);
+
+    document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
     // Registrar salida y calcular costo
     exitForm.addEventListener('submit', (e) => {
@@ -260,36 +399,32 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let totalCost = 0;
         let discount = 0;
+        let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
 
         let resultHTML = '';
         let receiptData = {};
 
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
-            const entryDay = entryTime.getDate();
-            let paymentDay = new Date(entryTime);
-            paymentDay.setMonth(paymentDay.getMonth() + 1);
-            
-            if (exitTime.getTime() > paymentDay.getTime() && exitTime.getDate() >= entryDay) {
-                 paymentDay.setMonth(paymentDay.getMonth() + 1);
-            } else if (exitTime.getTime() > paymentDay.getTime()) {
-                 paymentDay.setMonth(paymentDay.getMonth() + 1);
-            }
-            
-            let monthlyPrice;
+            let monthlyPrice = 0;
             if (vehicle.type === 'mensualidad') {
                 monthlyPrice = prices.carro.mes;
             } else if (vehicle.type === 'moto-mensualidad') {
                 monthlyPrice = prices.moto.mes;
             } else {
-                monthlyPrice = prices['otros-mensualidad'].mes;
+                monthlyPrice = vehicle.monthlyPrice;
             }
+
+            const entryDay = new Date(vehicle.entryTime).getDate();
+            const exitDay = exitTime.getDate();
+            const nextPaymentDate = new Date(vehicle.entryTime);
+            nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
 
             resultHTML = `
                 <p>Placa: <strong>${vehicle.plate}</strong></p>
                 <p>Tipo: <strong>${vehicle.type}</strong></p>
                 <p>Valor mensualidad: <strong>$${formatNumber(monthlyPrice)} COP</strong></p>
-                <p>Día de pago próximo: <strong>${paymentDay.toLocaleDateString('es-CO')}</strong></p>
+                <p>Día de pago próximo: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong></p>
                 <p class="info-message"><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
             `;
             totalCost = 0;
@@ -303,10 +438,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 descuento: 0,
                 esMensualidad: true,
                 costoOriginal: monthlyPrice,
-                proximoPago: paymentDay
+                proximoPago: nextPaymentDate
             };
 
         } else { // Carros y Motos por hora
+            const vehicleType = vehicle.type;
+            const pricePerHour = prices[vehicleType].hora;
+            const priceFor12Hours = prices[vehicleType].doceHoras;
+
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -324,34 +463,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     exitTime,
                     costoFinal: 0,
                     descuento: 0,
-                    esGratis: true, // Nuevo flag para indicar que es una salida gratis
+                    esGratis: true,
                     tiempoEstadia: `${diffInMinutes} minutos`
                 };
 
             } else {
-                const vehicleType = vehicle.type;
-                const pricePerHour = prices[vehicleType].hora;
-                const priceFor12Hours = prices[vehicleType].doceHoras;
-                
                 const totalHours = Math.ceil(diffInMinutes / 60);
                 totalCost = totalHours * pricePerHour;
                 
                 if (diffInMinutes >= 720) {
                     totalCost = priceFor12Hours;
                 }
-
-                let originalCost = totalCost;
-
+                originalCost = totalCost;
+                
                 if (isSpecialClient) {
-                    const discountRateInput = prompt('Ingrese el porcentaje de descuento (ej: 10 para 10%):');
-                    const discountRate = parseFloat(discountRateInput) / 100;
-                    if (!isNaN(discountRate) && discountRate >= 0 && discountRate <= 1) {
-                        discount = originalCost * discountRate;
-                        totalCost -= discount;
-                        showNotification(`Se aplicó un descuento del ${discountRate * 100}% (${formatNumber(discount)} COP).`, 'info');
-                    } else {
-                        showNotification('Porcentaje de descuento inválido. No se aplicó descuento.', 'error');
-                    }
+                    const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
+                    discount = (adjustmentValue < 0) ? Math.abs(adjustmentValue) : 0;
+                    totalCost = originalCost + adjustmentValue;
                 }
 
                 const totalHoursDisplay = Math.floor(diffInMinutes / 60);
@@ -361,11 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>Placa: <strong>${vehicle.plate}</strong></p>
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
                     <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
-                    <p>Costo calculado (sin descuento): <strong>$${formatNumber(originalCost)} COP</strong></p>
+                    <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
                 `;
                 
-                if (discount > 0) {
-                    resultHTML += `<p>Descuento aplicado: <strong>$${formatNumber(discount)} COP</strong></p>`;
+                if (isSpecialClient) {
+                    resultHTML += `<p>Ajuste por cliente especial: <strong>${specialClientAdjustment.value >= 0 ? '+' : ''}$${formatNumber(parseFloat(specialClientAdjustment.value) || 0)} COP</strong></p>`;
                 }
                 
                 resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
@@ -380,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     esGratis: false,
                     esMensualidad: false,
                     costoOriginal: originalCost,
+                    ajusteEspecial: parseFloat(specialClientAdjustment.value) || 0,
                     tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
                 };
             }
@@ -394,6 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateActiveVehiclesList();
         exitForm.reset();
         specialClientCheckbox.checked = false;
+        specialClientSection.style.display = 'none';
+        specialClientAdjustment.value = '';
 
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
@@ -436,13 +567,12 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(`Fecha de Salida: ${new Date(receiptData.exitTime).toLocaleString('es-CO')}`, 20, y);
         y += 10;
         
-        // Lógica para el recibo gratis
         if (receiptData.esGratis) {
             doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
             y += 10;
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(231, 76, 60); // Color rojo para el mensaje gratis
+            doc.setTextColor(231, 76, 60); 
             doc.text('NO COMPLETÓ LA MEDIA HORA', 105, y, null, null, 'center');
             y += 7;
             doc.text('SU SALIDA ES GRATIS', 105, y, null, null, 'center');
@@ -455,14 +585,14 @@ document.addEventListener('DOMContentLoaded', () => {
             y += 7;
             doc.text(`Costo Original: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
-            doc.text(`Descuento Aplicado: $${formatNumber(receiptData.descuento)} COP`, 20, y);
+            doc.text(`Ajuste Especial: ${receiptData.ajusteEspecial >= 0 ? '+' : ''}$${formatNumber(receiptData.ajusteEspecial)} COP`, 20, y);
             y += 10;
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(52, 152, 219);
             doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
             y += 20;
-        } else { // Recibo de mensualidad
+        } else {
             doc.text(`Tipo de Servicio: Mensualidad`, 20, y);
             y += 7;
             doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
