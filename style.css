@@ -271,13 +271,13 @@ ul li:last-child {
 }
 
 /* Tabs */
-.tabs {
+.tab-menu {
     display: flex;
     margin-bottom: 20px;
     background-color: var(--card-background);
     border-radius: 12px;
     box-shadow: var(--shadow);
-    overflow: hidden; /* Para los bordes redondeados */
+    overflow: hidden;
 }
 
 .tab-button {
@@ -290,17 +290,6 @@ ul li:last-child {
     font-weight: bold;
     font-size: 1.1em;
     transition: all 0.3s ease;
-    border-radius: 0; /* Asegurar que no haya redondeos internos */
-}
-
-.tab-button:first-child {
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-}
-
-.tab-button:last-child {
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
 }
 
 .tab-button:hover {
@@ -312,16 +301,6 @@ ul li:last-child {
     background-color: var(--primary-color);
     color: white;
     border-bottom: 3px solid var(--secondary-color);
-}
-
-.tab-button.active:hover {
-    background-color: var(--primary-color); /* No cambiar al hacer hover si está activo */
-    color: white;
-}
-
-
-.tab-content {
-    padding: 20px 0;
 }
 
 /* Pie de página */
@@ -401,16 +380,115 @@ footer {
     margin-bottom: 10px;
 }
 
+/* Centrar logo y título en el header */
 .logo-container {
     display: flex;
-    flex-direction: column; /* Apila el logo y el título */
-    align-items: center;    /* Centra horizontalmente el logo y el título */
-    gap: 5px; /* Espacio entre el logo y el título */
-    flex-grow: 1; /* Permite que el contenedor del logo ocupe el espacio disponible */
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-grow: 1;
     text-align: center;
 }
 
 .header-logo {
-    height: 150px; 
+    height: 150px;
     width: auto;
 }
+
+/* Estilos para la sección de lavandería */
+.laundry-menu {
+    display: flex;
+    margin-bottom: 20px;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.laundry-button {
+    flex-grow: 1;
+    background-color: var(--card-background);
+    color: var(--text-color);
+    padding: 15px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: bold;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+}
+
+.laundry-button:hover {
+    background-color: var(--background-color);
+    color: var(--primary-color);
+}
+
+.laundry-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom: 3px solid var(--accent-color);
+}
+
+.laundry-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.status-button {
+    padding: 8px 12px;
+    font-size: 0.9em;
+    border-radius: 6px;
+    opacity: 0.8;
+}
+
+.status-button:hover:not(:disabled) {
+    opacity: 1;
+}
+
+.ready-button {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.delivered-button {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.status-button:disabled {
+    cursor: not-allowed;
+    background-color: #dcdcdc;
+    color: #a0a0a0;
+}
+
+/* Animaciones específicas para lavandería */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animation-container {
+    font-size: 5rem;
+    text-align: center;
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+    color: var(--accent-color); /* Color verde para el pulgar arriba */
+}
+
+.animation-container.delivered {
+    color: var(--secondary-color); /* Color azul para la animación final */
+}
+
+.pulse-animation {
+    animation: pulse 1s infinite;
+}
+
+.laundry-status-pending { color: #f39c12; }
+.laundry-status-ready { color: #2ecc71; }
+.laundry-status-delivered { color: #3498db; }
