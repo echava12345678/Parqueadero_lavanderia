@@ -59,6 +59,20 @@
         <option value="otros-mensualidad">Otros Vehículos (Mensualidad)</option>
     </select>
 </div>
+                        <div id="others-type-container" style="display: none;">
+                            <div class="input-group">
+                                <label for="others-vehicle-size">Tamaño:</label>
+                                <select id="others-vehicle-size">
+                                    <option value="pequeño">Pequeño</option>
+                                    <option value="mediano">Mediano</option>
+                                    <option value="grande">Grande</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="others-monthly-price">Precio:</label>
+                                <input type="text" id="others-monthly-price" placeholder="Precio acordado" required>
+                            </div>
+                        </div>
                         <button type="submit" class="primary-button"><i class="fas fa-plus-circle"></i> Registrar Entrada</button>
                     </form>
                 </div>
@@ -70,10 +84,17 @@
                             <label for="plate-exit">Placa:</label>
                             <input type="text" id="plate-exit" placeholder="Ej: ABC-123" required>
                         </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="special-client">
-                            <label for="special-client">Cliente Especial (Descuento)</label>
+                         <div id="special-client-section" style="display: none;">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="special-client">
+                                <label for="special-client">Cliente Especial</label>
+                            </div>
+                            <div class="input-group">
+                                <label for="special-client-adjustment">Ajuste de precio:</label>
+                                <input type="number" id="special-client-adjustment" placeholder="+/- valor" value="0">
+                            </div>
                         </div>
+                        <p id="exit-cost-display"></p>
                         <button type="submit" class="secondary-button"><i class="fas fa-sign-out-alt"></i> Calcular Salida</button>
                     </form>
                 </div>
@@ -88,6 +109,12 @@
             <div id="active-vehicles-tab" class="tab-content fade-in" style="display: none;">
                 <div class="card">
                     <h3>Vehículos Actualmente en Parqueadero <i class="fas fa-parking"></i></h3>
+                    <div class="filter-buttons">
+                        <button class="filter-button active" data-filter="all">Todos</button>
+                        <button class="filter-button" data-filter="carro">Carros</button>
+                        <button class="filter-button" data-filter="moto">Motos</button>
+                        <button class="filter-button" data-filter="mensualidad">Mensualidad</button>
+                    </div>
                     <ul id="active-vehicles">
                         <li>No hay vehículos activos.</li>
                     </ul>
@@ -132,9 +159,57 @@
                                 <label for="car-month">Carro/Mes (Promedio):</label>
                                 <input type="number" id="car-month" value="250000" step="1000">
                             </div>
-                            <div class="input-group">
-                                <label for="food-month">Comida Rápida/Mes (Promedio):</label>
-                                <input type="number" id="food-month" value="200000" step="1000">
+                           <div class="input-group">
+                                <label for="bike-month">Moto/Mes (Promedio):</label>
+                                <input type="number" id="bike-month" value="150000" step="1000">
+                            </div>
+                        </div>
+                        <div class="other-vehicle-prices">
+                            <h4>Otros Vehículos (Mensualidad)</h4>
+                            <div class="size-prices">
+                                <h5>Pequeño</h5>
+                                <div class="input-group">
+                                    <label>Rango Mín:</label>
+                                    <input type="number" id="other-small-min" value="100000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Rango Máx:</label>
+                                    <input type="number" id="other-small-max" value="150000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Precio Defecto:</label>
+                                    <input type="number" id="other-small-default" value="120000">
+                                </div>
+                            </div>
+                            <div class="size-prices">
+                                <h5>Mediano</h5>
+                                <div class="input-group">
+                                    <label>Rango Mín:</label>
+                                    <input type="number" id="other-medium-min" value="151000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Rango Máx:</label>
+                                    <input type="number" id="other-medium-max" value="200000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Precio Defecto:</label>
+                                    <input type="number" id="other-medium-default" value="180000">
+                                </div>
+                            </div>
+                            <div class="size-prices">
+                                <h5>Grande</h5>
+                                <div class="input-group">
+                                    <label>Rango Mín:</label>
+                                    <input type="number" id="other-large-min" value="201000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Rango Máx:</label>
+                                    <input type="number" id="other-large-max" value="300000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Precio Defecto:</label>
+                                    <input type="number" id="other-large-default" value="250000">
+                                </div>
                             </div>
                         </div>
                         <button id="save-prices" class="primary-button"><i class="fas fa-save"></i> Guardar Tarifas</button>
