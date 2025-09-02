@@ -3,6 +3,7 @@ const { jsPDF } = window.jspdf;
 document.addEventListener('DOMContentLoaded', () => {
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
+    const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
 
     // Definición de elementos del DOM
     const loginSection = document.getElementById('login-section');
@@ -28,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const specialClientSection = document.getElementById('special-client-section');
     const specialClientAdjustment = document.getElementById('special-client-adjustment');
     const exitCostDisplay = document.getElementById('exit-cost-display');
+    const plateEntryInput = document.getElementById('plate-entry');
+    const plateLabel = document.getElementById('plate-label');
+    const otherPriceLabel = document.getElementById('other-price-label');
 
     // Tarifas iniciales con estructura completa
     let prices = {
@@ -47,6 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'pequeño': { min: 100000, max: 150000, mes: 120000 },
             'mediano': { min: 151000, max: 200000, mes: 180000 },
             'grande': { min: 201000, max: 300000, mes: 250000 }
+        },
+        'otros-noche': {
+            'pequeño': { min: 10000, max: 15000, noche: 12000 },
+            'mediano': { min: 15100, max: 20000, noche: 18000 },
+            'grande': { min: 20100, max: 30000, noche: 25000 }
         }
     };
 
@@ -64,44 +73,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const storedPrices = localStorage.getItem('parkingPrices');
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
-            
-            const carHalfHourInput = document.getElementById('car-half-hour');
-            if (carHalfHourInput && prices.carro && prices.carro.mediaHora !== undefined) carHalfHourInput.value = formatNumber(prices.carro.mediaHora);
-            
-            const carHourInput = document.getElementById('car-hour');
-            if (carHourInput && prices.carro && prices.carro.hora !== undefined) carHourInput.value = formatNumber(prices.carro.hora);
-            
-            const car12hInput = document.getElementById('car-12h');
-            if (car12hInput && prices.carro && prices.carro.doceHoras !== undefined) car12hInput.value = formatNumber(prices.carro.doceHoras);
-            
-            const carMonthInput = document.getElementById('car-month');
-            if (carMonthInput && prices.carro && prices.carro.mes !== undefined) carMonthInput.value = formatNumber(prices.carro.mes);
-            
-            const bikeHalfHourInput = document.getElementById('bike-half-hour');
-            if (bikeHalfHourInput && prices.moto && prices.moto.mediaHora !== undefined) bikeHalfHourInput.value = formatNumber(prices.moto.mediaHora);
-            
-            const bikeHourInput = document.getElementById('bike-hour');
-            if (bikeHourInput && prices.moto && prices.moto.hora !== undefined) bikeHourInput.value = formatNumber(prices.moto.hora);
-            
-            const bike12hInput = document.getElementById('bike-12h');
-            if (bike12hInput && prices.moto && prices.moto.doceHoras !== undefined) bike12hInput.value = formatNumber(prices.moto.doceHoras);
-            
-            const bikeMonthInput = document.getElementById('bike-month');
-            if (bikeMonthInput && prices.moto && prices.moto.mes !== undefined) bikeMonthInput.value = formatNumber(prices.moto.mes);
-    
-            // *** CORRECCIÓN CLAVE AQUÍ ***
-            // Se añaden verificaciones para la estructura anidada de 'otros-mensualidad'
-            if (prices['otros-mensualidad'] && prices['otros-mensualidad'].pequeño) {
-                document.getElementById('other-small-min').value = formatNumber(prices['otros-mensualidad'].pequeño.min);
-                document.getElementById('other-small-max').value = formatNumber(prices['otros-mensualidad'].pequeño.max);
-                document.getElementById('other-small-default').value = formatNumber(prices['otros-mensualidad'].pequeño.mes);
-                document.getElementById('other-medium-min').value = formatNumber(prices['otros-mensualidad'].mediano.min);
-                document.getElementById('other-medium-max').value = formatNumber(prices['otros-mensualidad'].mediano.max);
-                document.getElementById('other-medium-default').value = formatNumber(prices['otros-mensualidad'].mediano.mes);
-                document.getElementById('other-large-min').value = formatNumber(prices['otros-mensualidad'].grande.min);
-                document.getElementById('other-large-max').value = formatNumber(prices['otros-mensualidad'].grande.max);
-                document.getElementById('other-large-default').value = formatNumber(prices['otros-mensualidad'].grande.mes);
-            }
+        }
+
+        // Cargar precios en los campos de administración
+        if (prices.carro) {
+            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
+            document.getElementById('car-hour').value = prices.carro.hora;
+            document.getElementById('car-12h').value = prices.carro.doceHoras;
+            document.getElementById('car-month').value = prices.carro.mes;
+        }
+        if (prices.moto) {
+            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
+            document.getElementById('bike-hour').value = prices.moto.hora;
+            document.getElementById('bike-12h').value = prices.moto.doceHoras;
+            document.getElementById('bike-month').value = prices.moto.mes;
+        }
+        if (prices['otros-mensualidad']) {
+            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
+            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
+            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
+            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
+            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
+            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
+            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
+            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
+            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
+        }
+        if (prices['otros-noche']) {
+            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
+            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
+            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
+            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
+            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
+            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
+            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
+            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
+            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
         }
 
         activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
@@ -126,6 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (filterType === 'mensualidad') {
                 return v.type.includes('mensualidad');
             }
+            if (filterType === 'otros-noche') {
+                return v.type.includes('otros-noche');
+            }
             return v.type === filterType;
         });
 
@@ -135,13 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredVehicles.forEach(v => {
                 const li = document.createElement('li');
                 let extraInfo = '';
+                let displayPlate = v.plate;
                 if (v.type.includes('mensualidad')) {
                     const entryDate = new Date(v.entryTime);
                     const nextPaymentDate = new Date(entryDate);
                     nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
                     extraInfo = `<br>Próximo pago: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong>`;
                 }
-                li.innerHTML = `<span>Placa: <strong>${v.plate.toUpperCase()}</strong></span> <span>Tipo: ${v.type}</span> <span>Entrada: ${new Date(v.entryTime).toLocaleString()}${extraInfo}</span>`;
+                if (v.type.includes('otros')) {
+                    displayPlate = v.description;
+                }
+                li.innerHTML = `<span>Placa/Descripción: <strong>${displayPlate}</strong></span> <span>Tipo: ${v.type}</span> <span>Entrada: ${new Date(v.entryTime).toLocaleString()}${extraInfo}</span>`;
                 activeVehiclesList.appendChild(li);
             });
         }
@@ -236,54 +250,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Guardar tarifas del administrador
     savePricesBtn.addEventListener('click', () => {
-        const parseValue = (id) => {
-            const element = document.getElementById(id);
-            if (!element) return 0;
-            const value = element.value.replace(/\./g, '');
-            return parseInt(value) || 0;
+        
+        prices.carro = {
+            mediaHora: parseNumber(document.getElementById('car-half-hour').value),
+            hora: parseNumber(document.getElementById('car-hour').value),
+            doceHoras: parseNumber(document.getElementById('car-12h').value),
+            mes: parseNumber(document.getElementById('car-month').value)
         };
         
-        if (!prices.carro) prices.carro = {};
-        prices.carro.mediaHora = parseValue('car-half-hour');
-        prices.carro.hora = parseValue('car-hour');
-        prices.carro.doceHoras = parseValue('car-12h');
-        prices.carro.mes = parseValue('car-month');
-        
-        if (!prices.moto) prices.moto = {};
-        prices.moto.mediaHora = parseValue('bike-half-hour');
-        prices.moto.hora = parseValue('bike-hour');
-        prices.moto.doceHoras = parseValue('bike-12h');
-        prices.moto.mes = parseValue('bike-month');
+        prices.moto = {
+            mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
+            hora: parseNumber(document.getElementById('bike-hour').value),
+            doceHoras: parseNumber(document.getElementById('bike-12h').value),
+            mes: parseNumber(document.getElementById('bike-month').value)
+        };
 
-        // *** CORRECCIÓN CLAVE AQUÍ ***
-        // Se asegura que la estructura anidada exista antes de guardar
-        if (!prices['otros-mensualidad']) prices['otros-mensualidad'] = {};
-        if (!prices['otros-mensualidad'].pequeño) prices['otros-mensualidad'].pequeño = {};
-        if (!prices['otros-mensualidad'].mediano) prices['otros-mensualidad'].mediano = {};
-        if (!prices['otros-mensualidad'].grande) prices['otros-mensualidad'].grande = {};
-
-        prices['otros-mensualidad'].pequeño.min = parseValue('other-small-min');
-        prices['otros-mensualidad'].pequeño.max = parseValue('other-small-max');
-        prices['otros-mensualidad'].pequeño.mes = parseValue('other-small-default');
-        prices['otros-mensualidad'].mediano.min = parseValue('other-medium-min');
-        prices['otros-mensualidad'].mediano.max = parseValue('other-medium-max');
-        prices['otros-mensualidad'].mediano.mes = parseValue('other-medium-default');
-        prices['otros-mensualidad'].grande.min = parseValue('other-large-min');
-        prices['otros-mensualidad'].grande.max = parseValue('other-large-max');
-        prices['otros-mensualidad'].grande.mes = parseValue('other-large-default');
+        prices['otros-mensualidad'] = {
+            'pequeño': { min: parseNumber(document.getElementById('other-small-min').value), max: parseNumber(document.getElementById('other-small-max').value), mes: parseNumber(document.getElementById('other-small-default').value) },
+            'mediano': { min: parseNumber(document.getElementById('other-medium-min').value), max: parseNumber(document.getElementById('other-medium-max').value), mes: parseNumber(document.getElementById('other-medium-default').value) },
+            'grande': { min: parseNumber(document.getElementById('other-large-min').value), max: parseNumber(document.getElementById('other-large-max').value), mes: parseNumber(document.getElementById('other-large-default').value) }
+        };
         
+        prices['otros-noche'] = {
+            'pequeño': { min: parseNumber(document.getElementById('other-night-small-min').value), max: parseNumber(document.getElementById('other-night-small-max').value), noche: parseNumber(document.getElementById('other-night-small-default').value) },
+            'mediano': { min: parseNumber(document.getElementById('other-night-medium-min').value), max: parseNumber(document.getElementById('other-night-medium-max').value), noche: parseNumber(document.getElementById('other-night-medium-default').value) },
+            'grande': { min: parseNumber(document.getElementById('other-night-large-min').value), max: parseNumber(document.getElementById('other-night-large-max').value), noche: parseNumber(document.getElementById('other-night-large-default').value) }
+        };
+
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
         
         loadData();
     });
 
-    // Mostrar/ocultar campos de otros vehículos
+    // Mostrar/ocultar campos de otros vehículos y cambiar placeholder
     vehicleTypeEntry.addEventListener('change', () => {
-        if (vehicleTypeEntry.value === 'otros-mensualidad') {
+        const selectedType = vehicleTypeEntry.value;
+        if (selectedType === 'otros-mensualidad' || selectedType === 'otros-noche') {
             othersTypeContainer.style.display = 'flex';
+            plateLabel.textContent = "Descripción:";
+            plateEntryInput.placeholder = "Ej: Puesto de comida, Carro de helados";
+            if (selectedType === 'otros-mensualidad') {
+                otherPriceLabel.textContent = "Precio (Mensualidad):";
+                othersMonthlyPrice.placeholder = "Precio acordado";
+            } else {
+                otherPriceLabel.textContent = "Precio (Por Noche):";
+                othersMonthlyPrice.placeholder = "Precio acordado";
+            }
         } else {
             othersTypeContainer.style.display = 'none';
+            plateLabel.textContent = "Placa:";
+            plateEntryInput.placeholder = "Ej: ABC-123";
         }
     });
 
@@ -293,28 +310,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const plate = document.getElementById('plate-entry').value.trim().toUpperCase();
         const type = document.getElementById('type-entry').value;
 
-        if (activeVehicles.find(v => v.plate === plate)) {
+        let description = '';
+        if (['otros-mensualidad', 'otros-noche'].includes(type)) {
+            description = plate;
+        }
+
+        if (activeVehicles.find(v => v.plate === plate) && !['otros-mensualidad', 'otros-noche'].includes(type)) {
             showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
             return;
         }
 
         let otherVehicleSize = null;
-        let otherMonthlyPrice = null;
-        if (type === 'otros-mensualidad') {
+        let otherPrice = null;
+
+        if (type === 'otros-mensualidad' || type === 'otros-noche') {
             otherVehicleSize = othersVehicleSize.value;
-            otherMonthlyPrice = parseInt(othersMonthlyPrice.value.replace(/\./g, '')) || 0;
-            const sizePrices = prices['otros-mensualidad'][otherVehicleSize];
-            if (otherMonthlyPrice < sizePrices.min || otherMonthlyPrice > sizePrices.max) {
-                 showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
+            const priceValue = othersMonthlyPrice.value;
+            if (!priceValue) {
+                showNotification("Por favor, ingrese un precio para el vehículo.", 'error');
+                return;
+            }
+            otherPrice = parseNumber(priceValue);
+            
+            const sizePrices = prices[type][otherVehicleSize];
+            if (otherPrice < sizePrices.min || otherPrice > sizePrices.max) {
+                showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
                 return;
             }
         }
 
         const newVehicle = {
             plate,
+            description,
             type,
             entryTime: new Date().toISOString(),
-            monthlyPrice: otherMonthlyPrice,
+            price: otherPrice,
             size: otherVehicleSize
         };
         activeVehicles.push(newVehicle);
@@ -330,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('plate-exit').addEventListener('input', () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
-        if (vehicle && !['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
+        if (vehicle && !['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
             specialClientSection.style.display = 'flex';
         } else {
             specialClientSection.style.display = 'none';
@@ -342,8 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
-        if (!vehicle) {
+        if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
             exitCostDisplay.innerHTML = '';
+            specialClientSection.style.display = 'none';
             return;
         }
 
@@ -372,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         originalCost = totalCost;
 
         if (specialClientCheckbox.checked) {
-            const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
+            const adjustmentValue = parseNumber(specialClientAdjustment.value.replace(/,/g, '')) || 0;
             totalCost = originalCost + adjustmentValue;
             if (adjustmentValue < 0) {
                 showNotification(`Descuento de $${formatNumber(Math.abs(adjustmentValue))} COP aplicado.`, 'info');
@@ -396,10 +427,10 @@ document.addEventListener('DOMContentLoaded', () => {
     exitForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicleIndex = activeVehicles.findIndex(v => v.plate === plate);
+        const vehicleIndex = activeVehicles.findIndex(v => v.plate === plate || v.description === plate);
 
         if (vehicleIndex === -1) {
-            showNotification('Placa no encontrada. Por favor, verifique la placa e intente de nuevo.', 'error');
+            showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
             return;
         }
 
@@ -410,13 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
         
         let totalCost = 0;
-        let discount = 0;
         let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
-        const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
+        const adjustmentValue = parseNumber(specialClientAdjustment.value.replace(/,/g, '')) || 0;
 
         let resultHTML = '';
         let receiptData = {};
+        let displayPlate = vehicle.plate;
+        if (vehicle.type.includes('otros')) {
+            displayPlate = vehicle.description;
+        }
+
 
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
             let monthlyPrice = 0;
@@ -425,14 +460,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (vehicle.type === 'moto-mensualidad') {
                 monthlyPrice = prices.moto.mes;
             } else {
-                monthlyPrice = vehicle.monthlyPrice;
+                monthlyPrice = vehicle.price;
             }
 
             const nextPaymentDate = new Date(vehicle.entryTime);
             nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
 
             resultHTML = `
-                <p>Placa: <strong>${vehicle.plate}</strong></p>
+                <p>Placa/Descripción: <strong>${displayPlate}</strong></p>
                 <p>Tipo: <strong>${vehicle.type}</strong></p>
                 <p>Valor mensualidad: <strong>$${formatNumber(monthlyPrice)} COP</strong></p>
                 <p>Día de pago próximo: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong></p>
@@ -441,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             totalCost = 0;
             
             receiptData = {
-                plate: vehicle.plate,
+                plate: displayPlate,
                 type: vehicle.type,
                 entryTime,
                 exitTime,
@@ -450,6 +485,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 esMensualidad: true,
                 costoOriginal: monthlyPrice,
                 proximoPago: nextPaymentDate
+            };
+        } else if (vehicle.type === 'otros-noche') {
+            const nightPrice = vehicle.price;
+            resultHTML = `
+                <p>Descripción: <strong>${displayPlate}</strong></p>
+                <p>Tipo: <strong>${vehicle.type}</strong></p>
+                <p>Valor por noche: <strong>$${formatNumber(nightPrice)} COP</strong></p>
+                <p class="info-message"><strong>Salida registrada. Tarifa plana nocturna.</strong></p>
+            `;
+            totalCost = nightPrice;
+            
+            receiptData = {
+                plate: displayPlate,
+                type: vehicle.type,
+                entryTime,
+                exitTime,
+                costoFinal: totalCost,
+                esGratis: false,
+                esMensualidad: false,
+                esNoche: true,
+                costoOriginal: nightPrice
             };
 
         } else { // Carros y Motos por hora
@@ -568,8 +624,14 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.setFontSize(12);
         doc.setTextColor(52, 73, 94);
 
-        doc.text(`Placa: ${receiptData.plate}`, 20, y);
-        y += 7;
+        if (receiptData.esNoche || receiptData.esMensualidad) {
+            doc.text(`Descripción: ${receiptData.plate}`, 20, y);
+            y += 7;
+        } else {
+            doc.text(`Placa: ${receiptData.plate}`, 20, y);
+            y += 7;
+        }
+        
         doc.text(`Tipo de Vehículo: ${receiptData.type.replace('-', ' ').toUpperCase()}`, 20, y);
         y += 10;
         doc.text(`Fecha de Entrada: ${new Date(receiptData.entryTime).toLocaleString('es-CO')}`, 20, y);
@@ -590,12 +652,20 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.setFontSize(16);
             doc.text('TOTAL A PAGAR: $0 COP', 105, y, null, null, 'center');
             y += 20;
-        } else if (!receiptData.esMensualidad) {
-            doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
+        } else if (receiptData.esMensualidad) {
+            doc.text(`Tipo de Servicio: Mensualidad`, 20, y);
             y += 7;
-            doc.text(`Costo Original: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
+            doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
-            doc.text(`Ajuste Especial: ${receiptData.ajusteEspecial >= 0 ? '+' : ''}$${formatNumber(receiptData.ajusteEspecial)} COP`, 20, y);
+            doc.text(`Próximo Día de Pago: ${new Date(receiptData.proximoPago).toLocaleDateString('es-CO')}`, 20, y);
+            y += 10;
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(52, 152, 219);
+            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
+            y += 20;
+        } else if (receiptData.esNoche) {
+             doc.text(`Tarifa Plana por Noche: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 10;
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
@@ -603,11 +673,11 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
             y += 20;
         } else {
-            doc.text(`Tipo de Servicio: Mensualidad`, 20, y);
+            doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
             y += 7;
-            doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
+            doc.text(`Costo Original: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
-            doc.text(`Próximo Día de Pago: ${new Date(receiptData.proximoPago).toLocaleDateString('es-CO')}`, 20, y);
+            doc.text(`Ajuste Especial: ${receiptData.ajusteEspecial >= 0 ? '+' : ''}$${formatNumber(receiptData.ajusteEspecial)} COP`, 20, y);
             y += 10;
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
