@@ -222,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-        const diffInHoursExact = diffInMs / (1000 * 60 * 60);
         
         let totalCost = 0;
         let discount = 0;
@@ -278,17 +277,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const pricePerHour = prices[vehicleType].hora;
             const priceFor12Hours = prices[vehicleType].doceHoras;
 
+            // Lógica de cobro por tiempo corregida
             if (diffInMinutes <= 30) {
                 totalCost = priceHalfHour;
             } else {
                 const totalHours = Math.ceil(diffInMinutes / 60);
                 totalCost = totalHours * pricePerHour;
             }
-
-            if (totalCost > priceFor12Hours && diffInHoursExact >= 12) {
+            
+            // Lógica para 12 horas
+            if (diffInMinutes >= 720) { // 12 horas * 60 minutos
                 totalCost = priceFor12Hours;
             }
-            
+
             let originalCost = totalCost;
 
             if (isSpecialClient) {
