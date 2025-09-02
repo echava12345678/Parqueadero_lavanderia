@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.setFontSize(10);
 
         // Logo y título
-        doc.addImage(logoBase64, 'PNG', 10, 10, 30, 30);
+        // doc.addImage(logoBase64, 'PNG', 10, 10, 30, 30);
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(44, 62, 80);
