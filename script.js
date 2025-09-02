@@ -1,12 +1,35 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 const { jsPDF } = window.jspdf;
-import { collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+// Configuración de Firebase - REEMPLAZA CON TU PROPIA CONFIGURACIÓN SI ES NECESARIO
+const firebaseConfig = {
+    apiKey: "AIzaSyC81uKipArf__Mp9ernUh88E7kzjePdryA",
+    authDomain: "parqueadero-fb51c.firebaseapp.com",
+    projectId: "parqueadero-fb51c",
+    storageBucket: "parqueadero-fb51c.firebasestorage.app",
+    messagingSenderId: "76380635067",
+    appId: "1:76380635067:web:657d27d21af6d5ac764e9e",
+    measurementId: "G-RFPH0N835J"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window.db = db;
+
+// Pega tu código Base64 del logo aquí.
+const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAA... (código muy largo)";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
 
-    // Definición de elementos del DOM
+    // Constantes de lavandería
+    const LAVANDERIA_PRECIO_KG_9 = 30000;
+    const PROMOCION_LAVADOS_GRATIS = 5;
+
+    // Definición de elementos del DOM del parqueadero
     const loginSection = document.getElementById('login-section');
     const mainApp = document.getElementById('main-app');
     const loginForm = document.getElementById('login-form');
@@ -33,6 +56,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plateEntryInput = document.getElementById('plate-entry');
     const plateLabel = document.getElementById('plate-label');
     const otherPriceLabel = document.getElementById('other-price-label');
+
+    // Definición de elementos del DOM de lavandería
+    const laundryEntryForm = document.getElementById('laundry-entry-form');
+    const laundryClientName = document.getElementById('laundry-client-name');
+    const laundryLoads = document.getElementById('laundry-loads');
+    const laundryList = document.getElementById('laundry-list');
 
     // Tarifas iniciales con estructura completa
     let prices = {
@@ -68,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
+    let activeLaundryOrders = [];
 
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
@@ -77,6 +107,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => {
             notificationArea.style.display = 'none';
         }, 5000);
+    };
+
+    const showAnimation = (iconClass, type, text) => {
+        const animationDiv = document.createElement('div');
+        animationDiv.className = `animation-container ${type}-animation`;
+        animationDiv.innerHTML = `<i class="${iconClass} pulse-animation"></i><br><p>${text}</p>`;
+        mainApp.appendChild(animationDiv);
+        setTimeout(() => {
+            animationDiv.remove();
+        }, 3000);
     };
 
     const updateActiveVehiclesList = (filterType = 'all') => {
@@ -114,14 +154,84 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Cargar tarifas y vehículos desde localStorage (manteniendo el de precios en localStorage)
+    const updateActiveLaundryList = () => {
+        laundryList.innerHTML = '';
+        if (activeLaundryOrders.length === 0) {
+            laundryList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay pedidos de lavandería activos.</li>';
+        } else {
+            activeLaundryOrders.forEach(order => {
+                const li = document.createElement('li');
+                const statusClass = `laundry-status-${order.status}`;
+                const statusText = order.status === 'pending' ? 'Pendiente' : (order.status === 'ready' ? 'Lista' : 'Entregada');
+                const actionButtons = `
+                    <button class="status-button ready-button" data-id="${order.id}" ${order.status === 'ready' ? 'disabled' : ''}>
+                        <i class="fas fa-check-circle"></i> Lista
+                    </button>
+                    <button class="status-button delivered-button" data-id="${order.id}" ${order.status !== 'ready' ? 'disabled' : ''}>
+                        <i class="fas fa-handshake"></i> Entregada
+                    </button>
+                `;
+
+                li.innerHTML = `
+                    <span>Cliente: <strong>${order.clientName}</strong></span>
+                    <span>Lavadoras: ${order.loads}</span>
+                    <span>Entrada: ${new Date(order.entryTime).toLocaleString()}</span>
+                    <span>Estado: <strong class="${statusClass}">${statusText}</strong></span>
+                    <div class="laundry-actions">${actionButtons}</div>
+                `;
+                laundryList.appendChild(li);
+            });
+
+            // Agrega los event listeners a los nuevos botones
+            document.querySelectorAll('.ready-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    await updateDoc(doc(db, "laundryOrders", id), { status: 'ready' });
+                    showNotification('El pedido ha sido marcado como "Listo".', 'success');
+                    showAnimation('fas fa-thumbs-up', 'ready', '¡Pedido Listo!');
+                    loadData();
+                });
+            });
+
+            document.querySelectorAll('.delivered-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const order = activeLaundryOrders.find(o => o.id === id);
+                    if (order) {
+                        const totalCost = order.isFree ? 0 : (order.loads * LAVANDERIA_PRECIO_KG_9);
+                        const originalCost = order.loads * LAVANDERIA_PRECIO_KG_9;
+                        const receiptData = {
+                            clientName: order.clientName,
+                            loads: order.loads,
+                            entryTime: order.entryTime,
+                            exitTime: new Date().toISOString(),
+                            costoFinal: totalCost,
+                            costoOriginal: originalCost,
+                            isFree: order.isFree
+                        };
+                        localStorage.setItem('lastLaundryReceipt', JSON.stringify(receiptData));
+                        
+                        // Elimina el pedido de la base de datos
+                        await deleteDoc(doc(db, "laundryOrders", id));
+                        showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
+                        showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
+                        loadData();
+
+                        // Generar PDF
+                        generateLaundryReceipt(receiptData);
+                    }
+                });
+            });
+        }
+    };
+    
+    // Cargar tarifas y vehículos desde localStorage y Firestore
     const loadData = async () => {
+        // Cargar datos de parqueadero
         const storedPrices = localStorage.getItem('parkingPrices');
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
         }
-
-        // Cargar precios en los campos de administración
         if (prices.carro) {
             document.getElementById('car-half-hour').value = prices.carro.mediaHora;
             document.getElementById('car-hour').value = prices.carro.hora;
@@ -157,12 +267,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
         }
         
-        // Cargar vehículos desde Firestore
-        const vehiclesCol = collection(window.db, 'activeVehicles');
+        const vehiclesCol = collection(db, 'activeVehicles');
         const vehicleSnapshot = await getDocs(vehiclesCol);
         activeVehicles = vehicleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
         updateActiveVehiclesList();
+
+        // Cargar datos de lavandería
+        const laundryCol = collection(db, 'laundryOrders');
+        const laundrySnapshot = await getDocs(laundryCol);
+        activeLaundryOrders = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateActiveLaundryList();
     };
 
     // Filtros de vehículos activos
@@ -175,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Manejo de pestañas
+    // Manejo de pestañas principales
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -192,6 +306,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetTabId === 'active-vehicles-tab') {
                 updateActiveVehiclesList('all');
                 document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
+            }
+            if (targetTabId === 'laundry-tab') {
+                updateActiveLaundryList();
+                document.querySelector('.laundry-button[data-laundry-tab="laundry-register-tab"]').click();
+            }
+        });
+    });
+
+    // Manejo de pestañas de lavandería
+    const laundryButtons = document.querySelectorAll('.laundry-button');
+    const laundryContents = document.querySelectorAll('.laundry-content');
+
+    laundryButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            laundryButtons.forEach(btn => btn.classList.remove('active'));
+            laundryContents.forEach(content => content.style.display = 'none');
+
+            button.classList.add('active');
+            const targetTabId = button.dataset.laundryTab;
+            document.getElementById(targetTabId).style.display = 'block';
+            document.getElementById(targetTabId).classList.add('fade-in');
+
+            if (targetTabId === 'laundry-active-tab') {
+                updateActiveLaundryList();
             }
         });
     });
@@ -254,27 +392,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Guardar tarifas del administrador
     savePricesBtn.addEventListener('click', () => {
-        
         prices.carro = {
             mediaHora: parseNumber(document.getElementById('car-half-hour').value),
             hora: parseNumber(document.getElementById('car-hour').value),
             doceHoras: parseNumber(document.getElementById('car-12h').value),
             mes: parseNumber(document.getElementById('car-month').value)
         };
-        
         prices.moto = {
             mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
             hora: parseNumber(document.getElementById('bike-hour').value),
             doceHoras: parseNumber(document.getElementById('bike-12h').value),
             mes: parseNumber(document.getElementById('bike-month').value)
         };
-
         prices['otros-mensualidad'] = {
             'pequeño': { min: parseNumber(document.getElementById('other-small-min').value), max: parseNumber(document.getElementById('other-small-max').value), mes: parseNumber(document.getElementById('other-small-default').value) },
             'mediano': { min: parseNumber(document.getElementById('other-medium-min').value), max: parseNumber(document.getElementById('other-medium-max').value), mes: parseNumber(document.getElementById('other-medium-default').value) },
             'grande': { min: parseNumber(document.getElementById('other-large-min').value), max: parseNumber(document.getElementById('other-large-max').value), mes: parseNumber(document.getElementById('other-large-default').value) }
         };
-        
         prices['otros-noche'] = {
             'pequeño': { min: parseNumber(document.getElementById('other-night-small-min').value), max: parseNumber(document.getElementById('other-night-small-max').value), noche: parseNumber(document.getElementById('other-night-small-default').value) },
             'mediano': { min: parseNumber(document.getElementById('other-night-medium-min').value), max: parseNumber(document.getElementById('other-night-medium-max').value), noche: parseNumber(document.getElementById('other-night-medium-default').value) },
@@ -283,7 +417,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
-        
         loadData();
     });
 
@@ -313,14 +446,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const plate = document.getElementById('plate-entry').value.trim().toUpperCase();
         const type = document.getElementById('type-entry').value;
-
         let description = '';
         if (['otros-mensualidad', 'otros-noche'].includes(type)) {
             description = plate;
         }
-
-        // --- VERIFICA SI EL VEHÍCULO YA EXISTE EN FIRESTORE ---
-        const q = query(collection(window.db, 'activeVehicles'), where("plate", "==", plate));
+        const q = query(collection(db, 'activeVehicles'), where("plate", "==", plate));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty && !['otros-mensualidad', 'otros-noche'].includes(type)) {
             showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
@@ -345,7 +475,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
         }
-
         const newVehicle = {
             plate,
             description,
@@ -354,10 +483,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             price: otherPrice,
             size: otherVehicleSize
         };
-        
-        // --- AGREGA EL DOCUMENTO A LA COLECCIÓN 'activeVehicles' EN FIRESTORE ---
         try {
-            const docRef = await addDoc(collection(window.db, 'activeVehicles'), newVehicle);
+            const docRef = await addDoc(collection(db, 'activeVehicles'), newVehicle);
             showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
             entryForm.reset();
             othersTypeContainer.style.display = 'none';
@@ -390,14 +517,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             specialClientSection.style.display = 'none';
             return;
         }
-
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-
         let totalCost = 0;
-
         if (diffInMinutes <= 30) {
             totalCost = 0;
         } else if (diffInMinutes > 30 && diffInMinutes <= 60) {
@@ -406,17 +530,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const vehicleType = vehicle.type;
             const pricePerHour = prices[vehicleType].hora;
             const priceFor12Hours = prices[vehicleType].doceHoras;
-            
             const totalHours = Math.ceil(diffInMinutes / 60);
             totalCost = totalHours * pricePerHour;
-            
             if (diffInMinutes >= 720) {
                 totalCost = priceFor12Hours;
             }
         }
-        
         let originalCost = totalCost;
-
         if (specialClientCheckbox.checked) {
             const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
             totalCost = originalCost + adjustmentValue;
@@ -428,14 +548,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             notificationArea.style.display = 'none';
         }
-
         currentCalculatedCost = totalCost;
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
 
     specialClientCheckbox.addEventListener('change', updateCalculatedCost);
     specialClientAdjustment.addEventListener('input', updateCalculatedCost);
-
     document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
     // Registrar salida y calcular costo
@@ -443,30 +561,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate || v.description === plate);
-
         if (!vehicle) {
             showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
             return;
         }
-
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-        
         let totalCost = 0;
         let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
         const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
-
         let resultHTML = '';
         let receiptData = {};
         let displayPlate = vehicle.plate;
         if (vehicle.type.includes('otros')) {
             displayPlate = vehicle.description;
         }
-
-
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
             let monthlyPrice = 0;
             if (vehicle.type === 'mensualidad') {
@@ -476,10 +588,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 monthlyPrice = vehicle.price;
             }
-
             const nextPaymentDate = new Date(vehicle.entryTime);
             nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-
             resultHTML = `
                 <p>Placa/Descripción: <strong>${displayPlate}</strong></p>
                 <p>Tipo: <strong>${vehicle.type}</strong></p>
@@ -488,7 +598,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p class="info-message"><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
             `;
             totalCost = 0;
-            
             receiptData = {
                 plate: displayPlate,
                 type: vehicle.type,
@@ -509,7 +618,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p class="info-message"><strong>Salida registrada. Tarifa plana nocturna.</strong></p>
             `;
             totalCost = nightPrice;
-            
             receiptData = {
                 plate: displayPlate,
                 type: vehicle.type,
@@ -532,7 +640,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
                     <p>Total a pagar: <strong>$0 COP</strong></p>
                 `;
-                
                 receiptData = {
                     plate: vehicle.plate,
                     type: vehicle.type,
@@ -546,41 +653,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } else {
                 const vehicleType = vehicle.type;
-
-                // Nuevo cálculo de costo: primero media hora, luego horas completas
                 if (diffInMinutes <= 60) {
                     totalCost = prices[vehicleType].mediaHora;
                 } else {
                     const totalHours = Math.ceil(diffInMinutes / 60);
                     totalCost = totalHours * prices[vehicleType].hora;
                 }
-                
                 if (diffInMinutes >= 720) {
                     totalCost = prices[vehicleType].doceHoras;
                 }
-                
                 originalCost = totalCost;
-                
                 if (isSpecialClient) {
                     totalCost = originalCost + adjustmentValue;
                 }
-
                 const totalHoursDisplay = Math.floor(diffInMinutes / 60);
                 const totalMinutesDisplay = diffInMinutes % 60;
-
                 resultHTML = `
                     <p>Placa: <strong>${vehicle.plate}</strong></p>
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
                     <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
                     <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
                 `;
-                
                 if (isSpecialClient) {
                     resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
                 }
-                
                 resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
-
                 receiptData = {
                     plate: vehicle.plate,
                     type: vehicle.type,
@@ -596,27 +693,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             }
         }
-
         resultContent.innerHTML = resultHTML;
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
-
-        // --- ELIMINA EL DOCUMENTO DE FIRESTORE ---
         try {
-            await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
+            await deleteDoc(doc(db, "activeVehicles", vehicle.id));
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
-            await loadData(); // Recarga la lista de vehículos desde Firestore
+            await loadData();
         } catch (e) {
             console.error("Error al eliminar documento: ", e);
             showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
         }
-
         exitForm.reset();
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
         exitCostDisplay.innerHTML = '';
-
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
 
@@ -627,28 +719,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
             return;
         }
-
         const doc = new jsPDF();
         doc.setFont('helvetica');
         doc.setTextColor(44, 62, 80);
-
+        const imgWidth = 40;
+        const imgHeight = 40;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const xPos = (pageWidth / 2) - (imgWidth / 2);
+        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
         doc.setFontSize(22);
-        doc.text('Parqueadero El Reloj', 105, 20, null, null, 'center');
+        doc.text('Parqueadero El Reloj', 105, 50, null, null, 'center');
         doc.setFontSize(16);
-
         if (receiptData.esGratis) {
-            doc.text('Salida Gratis', 105, 30, null, null, 'center');
+            doc.text('Salida Gratis', 105, 60, null, null, 'center');
         } else {
-            doc.text('Recibo de Pago', 105, 30, null, null, 'center');
+            doc.text('Recibo de Pago', 105, 60, null, null, 'center');
         }
-        
         doc.setDrawColor(200, 200, 200);
-        doc.line(20, 35, 190, 35);
-
-        let y = 45;
+        doc.line(20, 65, 190, 65);
+        let y = 75;
         doc.setFontSize(12);
         doc.setTextColor(52, 73, 94);
-
         if (receiptData.esNoche || receiptData.esMensualidad) {
             doc.text(`Descripción: ${receiptData.plate}`, 20, y);
             y += 7;
@@ -656,14 +747,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text(`Placa: ${receiptData.plate}`, 20, y);
             y += 7;
         }
-        
         doc.text(`Tipo de Vehículo: ${receiptData.type.replace('-', ' ').toUpperCase()}`, 20, y);
         y += 10;
         doc.text(`Fecha de Entrada: ${new Date(receiptData.entryTime).toLocaleString('es-CO')}`, 20, y);
         y += 7;
         doc.text(`Fecha de Salida: ${new Date(receiptData.exitTime).toLocaleString('es-CO')}`, 20, y);
         y += 10;
-        
         if (receiptData.esGratis) {
             doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
             y += 10;
@@ -710,19 +799,129 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
             y += 20;
         }
-
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 100, 100);
         doc.text('¡Gracias por su visita!', 105, y, null, null, 'center');
         y += 5;
         doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
-
         doc.save(`Recibo_Parqueadero_${receiptData.plate}.pdf`);
         showNotification('Recibo PDF generado con éxito.', 'success');
     });
 
+    // Registrar pedido de lavandería
+    laundryEntryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clientName = laundryClientName.value.trim();
+        const loads = parseInt(laundryLoads.value);
+
+        const clientsCol = collection(db, 'laundryClients');
+        const clientQuery = query(clientsCol, where("name", "==", clientName));
+        const clientSnapshot = await getDocs(clientQuery);
+        
+        let isFree = false;
+        let clientDocId = null;
+
+        if (clientSnapshot.empty) {
+            // Cliente nuevo, crea el perfil
+            const newClientData = { name: clientName, loadsCount: loads };
+            const docRef = await addDoc(clientsCol, newClientData);
+            clientDocId = docRef.id;
+            showNotification(`Cliente nuevo registrado: ${clientName}.`, 'info');
+        } else {
+            // Cliente existente, actualiza el contador de lavadas
+            const clientDoc = clientSnapshot.docs[0];
+            const currentLoads = clientDoc.data().loadsCount;
+            clientDocId = clientDoc.id;
+
+            if (currentLoads >= PROMOCION_LAVADOS_GRATIS) {
+                isFree = true;
+                // Reinicia el contador para el próximo ciclo
+                await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: loads });
+                showNotification(`¡Lavado gratis para ${clientName}! Se ha aplicado la promoción.`, 'success');
+            } else {
+                // Incrementa el contador
+                await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: currentLoads + loads });
+                showNotification(`Se han sumado ${loads} lavadas a la cuenta de ${clientName}.`, 'info');
+            }
+        }
+        
+        const newOrder = {
+            clientName,
+            loads,
+            entryTime: new Date().toISOString(),
+            status: 'pending',
+            isFree: isFree,
+            clientDocId: clientDocId
+        };
+
+        try {
+            await addDoc(collection(db, 'laundryOrders'), newOrder);
+            showNotification(`Pedido de lavandería para ${clientName} registrado.`, 'success');
+            laundryEntryForm.reset();
+            laundryLoads.value = '1';
+            await loadData();
+        } catch (e) {
+            console.error("Error al añadir pedido: ", e);
+            showNotification("Error al registrar el pedido de lavandería.", 'error');
+        }
+    });
+
+    // Función para generar recibo de lavandería
+    const generateLaundryReceipt = (data) => {
+        const doc = new jsPDF();
+        doc.setFont('helvetica');
+        doc.setTextColor(44, 62, 80);
+        const imgWidth = 40;
+        const imgHeight = 40;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const xPos = (pageWidth / 2) - (imgWidth / 2);
+        doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
+        doc.setFontSize(22);
+        doc.text('Parqueadero y Lavandería', 105, 50, null, null, 'center');
+        doc.setFontSize(16);
+        doc.text('Recibo de Lavandería', 105, 60, null, null, 'center');
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 65, 190, 65);
+        let y = 75;
+        doc.setFontSize(12);
+        doc.setTextColor(52, 73, 94);
+        doc.text(`Cliente: ${data.clientName}`, 20, y);
+        y += 7;
+        doc.text(`Cantidad de lavadoras: ${data.loads}`, 20, y);
+        y += 7;
+        doc.text(`Fecha de Entrada: ${new Date(data.entryTime).toLocaleString('es-CO')}`, 20, y);
+        y += 7;
+        doc.text(`Fecha de Salida: ${new Date(data.exitTime).toLocaleString('es-CO')}`, 20, y);
+        y += 10;
+
+        if (data.isFree) {
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(46, 204, 113); // Color verde
+            doc.text('¡LAVADO GRATIS!', 105, y, null, null, 'center');
+            y += 7;
+            doc.text('Aplica promoción por cliente frecuente.', 105, y, null, null, 'center');
+            y += 10;
+        } else {
+            doc.text(`Costo por lavadora: $${formatNumber(LAVANDERIA_PRECIO_KG_9)} COP`, 20, y);
+            y += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text(`TOTAL A PAGAR: $${formatNumber(data.costoFinal)} COP`, 20, y);
+        y += 20;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('¡Gracias por su preferencia!', 105, y, null, null, 'center');
+        y += 5;
+        doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
+        doc.save(`Recibo_Lavanderia_${data.clientName}.pdf`);
+    };
+
     // Llamada inicial para cargar los datos y actualizar la lista de vehículos.
-    // Esto se hace al final para asegurar que todas las funciones ya estén definidas.
     await loadData();
 });
