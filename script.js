@@ -307,12 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
         } else { // Carros y Motos por hora
-            const vehicleType = vehicle.type;
-            const priceHalfHour = prices[vehicleType].mediaHora;
-            const pricePerHour = prices[vehicleType].hora;
-            const priceFor12Hours = prices[vehicleType].doceHoras;
-
-            // Lógica de cobro por tiempo corregida
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -320,70 +314,75 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
                     <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
                     <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
-                    <p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>
+                    <p>Total a pagar: <strong>$0 COP</strong></p>
                 `;
-                resultContent.innerHTML = resultHTML;
-                resultDiv.style.display = 'block';
-                resultDiv.classList.add('fade-in');
+                
+                receiptData = {
+                    plate: vehicle.plate,
+                    type: vehicle.type,
+                    entryTime,
+                    exitTime,
+                    costoFinal: 0,
+                    descuento: 0,
+                    esGratis: true, // Nuevo flag para indicar que es una salida gratis
+                    tiempoEstadia: `${diffInMinutes} minutos`
+                };
 
-                activeVehicles.splice(vehicleIndex, 1);
-                localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
-                updateActiveVehiclesList();
-                exitForm.reset();
-                specialClientCheckbox.checked = false;
-
-                // No se genera recibo porque no hay cobro
-                return;
             } else {
+                const vehicleType = vehicle.type;
+                const pricePerHour = prices[vehicleType].hora;
+                const priceFor12Hours = prices[vehicleType].doceHoras;
+                
                 const totalHours = Math.ceil(diffInMinutes / 60);
                 totalCost = totalHours * pricePerHour;
-            }
-            
-            if (diffInMinutes >= 720) { // 12 horas * 60 minutos
-                totalCost = priceFor12Hours;
-            }
-
-            let originalCost = totalCost;
-
-            if (isSpecialClient) {
-                const discountRateInput = prompt('Ingrese el porcentaje de descuento (ej: 10 para 10%):');
-                const discountRate = parseFloat(discountRateInput) / 100;
-                if (!isNaN(discountRate) && discountRate >= 0 && discountRate <= 1) {
-                    discount = originalCost * discountRate;
-                    totalCost -= discount;
-                    showNotification(`Se aplicó un descuento del ${discountRate * 100}% (${formatNumber(discount)} COP).`, 'info');
-                } else {
-                    showNotification('Porcentaje de descuento inválido. No se aplicó descuento.', 'error');
+                
+                if (diffInMinutes >= 720) {
+                    totalCost = priceFor12Hours;
                 }
+
+                let originalCost = totalCost;
+
+                if (isSpecialClient) {
+                    const discountRateInput = prompt('Ingrese el porcentaje de descuento (ej: 10 para 10%):');
+                    const discountRate = parseFloat(discountRateInput) / 100;
+                    if (!isNaN(discountRate) && discountRate >= 0 && discountRate <= 1) {
+                        discount = originalCost * discountRate;
+                        totalCost -= discount;
+                        showNotification(`Se aplicó un descuento del ${discountRate * 100}% (${formatNumber(discount)} COP).`, 'info');
+                    } else {
+                        showNotification('Porcentaje de descuento inválido. No se aplicó descuento.', 'error');
+                    }
+                }
+
+                const totalHoursDisplay = Math.floor(diffInMinutes / 60);
+                const totalMinutesDisplay = diffInMinutes % 60;
+
+                resultHTML = `
+                    <p>Placa: <strong>${vehicle.plate}</strong></p>
+                    <p>Tipo: <strong>${vehicle.type}</strong></p>
+                    <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
+                    <p>Costo calculado (sin descuento): <strong>$${formatNumber(originalCost)} COP</strong></p>
+                `;
+                
+                if (discount > 0) {
+                    resultHTML += `<p>Descuento aplicado: <strong>$${formatNumber(discount)} COP</strong></p>`;
+                }
+                
+                resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
+
+                receiptData = {
+                    plate: vehicle.plate,
+                    type: vehicle.type,
+                    entryTime,
+                    exitTime,
+                    costoFinal: totalCost,
+                    descuento: discount,
+                    esGratis: false,
+                    esMensualidad: false,
+                    costoOriginal: originalCost,
+                    tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
+                };
             }
-
-            const totalHoursDisplay = Math.floor(diffInMinutes / 60);
-            const totalMinutesDisplay = diffInMinutes % 60;
-
-            resultHTML = `
-                <p>Placa: <strong>${vehicle.plate}</strong></p>
-                <p>Tipo: <strong>${vehicle.type}</strong></p>
-                <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
-                <p>Costo calculado (sin descuento): <strong>$${formatNumber(originalCost)} COP</strong></p>
-            `;
-            
-            if (discount > 0) {
-                resultHTML += `<p>Descuento aplicado: <strong>$${formatNumber(discount)} COP</strong></p>`;
-            }
-            
-            resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
-
-            receiptData = {
-                plate: vehicle.plate,
-                type: vehicle.type,
-                entryTime,
-                exitTime,
-                costoFinal: totalCost,
-                descuento: discount,
-                esMensualidad: false,
-                costoOriginal: originalCost,
-                tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
-            };
         }
 
         resultContent.innerHTML = resultHTML;
@@ -403,30 +402,24 @@ document.addEventListener('DOMContentLoaded', () => {
     printReceiptBtn.addEventListener('click', () => {
         const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
         if (!receiptData) {
-            showNotification('No hay un recibo para descargar.', 'error');
-            return;
-        }
-        
-        if (receiptData.costoFinal === 0) {
-            showNotification('No se puede generar recibo de un servicio gratuito.', 'info');
+            showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
             return;
         }
 
         const doc = new jsPDF();
-
-        // Configuración general
         doc.setFont('helvetica');
-        doc.setFontSize(12);
-
-        // Título
-        doc.setFontSize(22);
         doc.setTextColor(44, 62, 80);
+
+        doc.setFontSize(22);
         doc.text('Parqueadero El Reloj', 105, 20, null, null, 'center');
         doc.setFontSize(16);
-        doc.setTextColor(52, 152, 219);
-        doc.text('Recibo de Pago', 105, 30, null, null, 'center');
 
-        // Separador
+        if (receiptData.esGratis) {
+            doc.text('Salida Gratis', 105, 30, null, null, 'center');
+        } else {
+            doc.text('Recibo de Pago', 105, 30, null, null, 'center');
+        }
+        
         doc.setDrawColor(200, 200, 200);
         doc.line(20, 35, 190, 35);
 
@@ -442,28 +435,46 @@ document.addEventListener('DOMContentLoaded', () => {
         y += 7;
         doc.text(`Fecha de Salida: ${new Date(receiptData.exitTime).toLocaleString('es-CO')}`, 20, y);
         y += 10;
-
-        if (!receiptData.esMensualidad) {
+        
+        // Lógica para el recibo gratis
+        if (receiptData.esGratis) {
+            doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
+            y += 10;
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(231, 76, 60); // Color rojo para el mensaje gratis
+            doc.text('NO COMPLETÓ LA MEDIA HORA', 105, y, null, null, 'center');
+            y += 7;
+            doc.text('SU SALIDA ES GRATIS', 105, y, null, null, 'center');
+            y += 10;
+            doc.setFontSize(16);
+            doc.text('TOTAL A PAGAR: $0 COP', 105, y, null, null, 'center');
+            y += 20;
+        } else if (!receiptData.esMensualidad) {
             doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
             y += 7;
             doc.text(`Costo Original: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
             doc.text(`Descuento Aplicado: $${formatNumber(receiptData.descuento)} COP`, 20, y);
             y += 10;
-        } else {
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(52, 152, 219);
+            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
+            y += 20;
+        } else { // Recibo de mensualidad
             doc.text(`Tipo de Servicio: Mensualidad`, 20, y);
             y += 7;
             doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
             doc.text(`Próximo Día de Pago: ${new Date(receiptData.proximoPago).toLocaleDateString('es-CO')}`, 20, y);
             y += 10;
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(52, 152, 219);
+            doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
+            y += 20;
         }
-
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(52, 152, 219);
-        doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
-        y += 20;
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
