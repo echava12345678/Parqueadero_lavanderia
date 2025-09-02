@@ -384,10 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
 
         let totalCost = 0;
-        let originalCost = 0;
 
         if (diffInMinutes <= 30) {
             totalCost = 0;
+        } else if (diffInMinutes > 30 && diffInMinutes <= 60) {
+            totalCost = prices[vehicle.type].mediaHora;
         } else {
             const vehicleType = vehicle.type;
             const pricePerHour = prices[vehicleType].hora;
@@ -400,10 +401,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalCost = priceFor12Hours;
             }
         }
-        originalCost = totalCost;
+        
+        let originalCost = totalCost;
 
         if (specialClientCheckbox.checked) {
-            const adjustmentValue = parseNumber(specialClientAdjustment.value.replace(/,/g, '')) || 0;
+            const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
             totalCost = originalCost + adjustmentValue;
             if (adjustmentValue < 0) {
                 showNotification(`Descuento de $${formatNumber(Math.abs(adjustmentValue))} COP aplicado.`, 'info');
@@ -443,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalCost = 0;
         let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
-        const adjustmentValue = parseNumber(specialClientAdjustment.value.replace(/,/g, '')) || 0;
+        const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
 
         let resultHTML = '';
         let receiptData = {};
@@ -509,10 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
         } else { // Carros y Motos por hora
-            const vehicleType = vehicle.type;
-            const pricePerHour = prices[vehicleType].hora;
-            const priceFor12Hours = prices[vehicleType].doceHoras;
-
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -535,12 +533,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
             } else {
-                const totalHours = Math.ceil(diffInMinutes / 60);
-                totalCost = totalHours * pricePerHour;
+                const vehicleType = vehicle.type;
+
+                // Nuevo cálculo de costo: primero media hora, luego horas completas
+                if (diffInMinutes <= 60) {
+                    totalCost = prices[vehicleType].mediaHora;
+                } else {
+                    const totalHours = Math.ceil(diffInMinutes / 60);
+                    totalCost = totalHours * prices[vehicleType].hora;
+                }
                 
                 if (diffInMinutes >= 720) {
-                    totalCost = priceFor12Hours;
+                    totalCost = prices[vehicleType].doceHoras;
                 }
+                
                 originalCost = totalCost;
                 
                 if (isSpecialClient) {
