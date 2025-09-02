@@ -3,108 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Parqueadero 🚗🛵</title>
+    <title>Parqueadero</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <header>
-        <div class="logo">🅿️</div>
-        <h1>Parqueadero <span>Veloz</span></h1>
+        <h1>Gestión de Parqueadero</h1>
     </header>
 
     <main>
-        <section id="login-section" class="form-container">
+        <section id="login-section">
             <h2>Acceso al Sistema</h2>
             <form id="login-form">
-                <input type="password" id="password-input" placeholder="Contraseña" required>
-                <button type="submit">Entrar</button>
+                <label for="username">Usuario:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit">Iniciar Sesión</button>
+                <p id="login-error" class="error-message"></p>
             </form>
-            <div id="login-error" class="error-message"></div>
         </section>
 
-        <section id="dashboard-section" class="hidden">
-            <nav class="tabs">
-                <button class="tab-button active" onclick="showTab('entrada')">Entrada</button>
-                <button class="tab-button" onclick="showTab('salida')">Salida</button>
-                <button class="tab-button" onclick="showTab('mensualidades')">Mensualidades</button>
-                <button class="tab-button" onclick="showTab('admin-panel')">Administración</button>
+        <section id="worker-section" class="hidden">
+            <nav class="user-nav">
+                <h3>Bienvenido, Trabajador</h3>
+                <button id="logout-btn-worker" class="logout-btn">Cerrar Sesión</button>
             </nav>
 
-            <div id="entrada" class="tab-content active">
-                <h2>Registrar Entrada</h2>
-                <form id="entrada-form">
-                    <input type="text" id="placa-entrada" placeholder="Placa" required>
-                    <div class="select-group">
-                        <select id="tipo-vehiculo-entrada" required>
-                            <option value="">Tipo de Vehículo</option>
-                            <option value="Carro">Carro 🚗</option>
-                            <option value="Moto">Moto 🛵</option>
-                            <option value="Comida Rápida">Food Truck 🍔</option>
+            <div class="worker-dashboard">
+                <div class="form-container">
+                    <form id="entry-form">
+                        <h3>Ingreso de Vehículo</h3>
+                        <label for="entry-placa">Placa:</label>
+                        <input type="text" id="entry-placa" required>
+                        
+                        <label for="entry-type">Tipo de Vehículo:</label>
+                        <select id="entry-type" required>
+                            <option value="">Seleccione...</option>
+                            <option value="carro">Carro</option>
+                            <option value="moto">Moto</option>
+                            <option value="carrito-comida">Carrito de Comida</option>
                         </select>
-                        <select id="tipo-pago-entrada" required>
-                            <option value="">Tipo de Pago</option>
-                            <option value="Por Hora">Por Hora</option>
-                            <option value="Mensualidad">Mensualidad</option>
-                        </select>
-                    </div>
-                    <div id="mensualidad-group" class="hidden">
-                        <input type="number" id="precio-mensualidad" placeholder="Precio Mensualidad (COP)">
-                    </div>
-                    <label class="checkbox-container">Cliente Especial
-                        <input type="checkbox" id="cliente-especial-entrada">
-                        <span class="checkmark"></span>
-                    </label>
-                    <button type="submit">Registrar Entrada</button>
-                </form>
-                <div id="entrada-message" class="info-message"></div>
-            </div>
+                        
+                        <div id="monthly-payment-group" class="hidden">
+                            <label for="is-monthly">Mensualidad:</label>
+                            <input type="checkbox" id="is-monthly">
+                        </div>
 
-            <div id="salida" class="tab-content hidden">
-                <h2>Registrar Salida</h2>
-                <form id="salida-form">
-                    <input type="text" id="placa-salida" placeholder="Placa" required>
-                    <button type="submit">Calcular Pago</button>
-                </form>
-                <div id="salida-details" class="result-box hidden">
-                    <h3>Detalles de Pago</h3>
-                    <p><strong>Placa:</strong> <span id="salida-placa"></span></p>
-                    <p><strong>Tipo:</strong> <span id="salida-tipo"></span></p>
-                    <p><strong>Tiempo:</strong> <span id="salida-tiempo"></span></p>
-                    <p><strong>Total a Pagar:</strong> <span id="salida-total"></span></p>
-                    <button id="confirmar-salida-btn" class="confirm-btn">Confirmar Salida y Generar Recibo</button>
+                        <button type="submit">Registrar Entrada</button>
+                    </form>
                 </div>
-                <div id="salida-message" class="info-message"></div>
+                
+                <div class="form-container">
+                    <form id="exit-form">
+                        <h3>Salida de Vehículo</h3>
+                        <label for="exit-placa">Placa:</label>
+                        <input type="text" id="exit-placa" required>
+
+                        <div id="payment-details" class="hidden">
+                            <label for="is-special-client">Cliente Especial:</label>
+                            <input type="checkbox" id="is-special-client">
+                            <div class="discount-options hidden">
+                                <label for="discount-percentage">Descuento (%)</label>
+                                <input type="number" id="discount-percentage" min="0" max="100">
+                            </div>
+                            
+                            <p><strong>Total a Pagar:</strong> <span id="total-price">0</span></p>
+                            <p><strong>Tiempo de Estancia:</strong> <span id="stay-time">0</span></p>
+                        </div>
+
+                        <button type="button" id="calculate-btn">Calcular Salida</button>
+                        <button type="submit" id="confirm-exit-btn" class="hidden">Confirmar Salida</button>
+                    </form>
+                </div>
             </div>
 
-            <div id="mensualidades" class="tab-content hidden">
-                <h2>Vehículos con Mensualidad</h2>
-                <ul id="mensualidades-list"></ul>
+            <div class="parking-list-container">
+                <h3>Vehículos Parqueados</h3>
+                <ul id="parking-list"></ul>
             </div>
+        </section>
 
-            <div id="admin-panel" class="tab-content hidden">
-                <h2>Panel de Administración ⚙️</h2>
-                <p>⚠️ Solo visible para el administrador</p>
-                <div class="card">
-                    <h3>Precios Por Hora</h3>
-                    <form id="precios-form">
-                        <label for="precio-hora-carro">Carro:</label>
-                        <input type="number" id="precio-hora-carro" placeholder="Precio hora carro">
-                        <label for="precio-hora-moto">Moto:</label>
-                        <input type="number" id="precio-hora-moto" placeholder="Precio hora moto">
-                        <label for="precio-12h-carro">Carro (12h):</label>
-                        <input type="number" id="precio-12h-carro" placeholder="Precio 12h carro">
-                        <label for="precio-12h-moto">Moto (12h):</label>
-                        <input type="number" id="precio-12h-moto" placeholder="Precio 12h moto">
-                        <button type="submit">Actualizar Precios</button>
+        <section id="admin-section" class="hidden">
+            <nav class="user-nav">
+                <h3>Bienvenido, Administrador</h3>
+                <button id="logout-btn-admin" class="logout-btn">Cerrar Sesión</button>
+            </nav>
+
+            <div class="admin-dashboard">
+                <div class="form-container">
+                    <h3>Configuración de Tarifas</h3>
+                    <form id="rates-form">
+                        <label for="car-hour">Carro (Hora):</label>
+                        <input type="number" id="car-hour" min="0" required>
+
+                        <label for="moto-hour">Moto (Hora):</label>
+                        <input type="number" id="moto-hour" min="0" required>
+                        
+                        <label for="car-12h">Carro (12 Horas):</label>
+                        <input type="number" id="car-12h" min="0" required>
+
+                        <label for="moto-12h">Moto (12 Horas):</label>
+                        <input type="number" id="moto-12h" min="0" required>
+                        
+                        <label for="car-monthly">Carro (Mensualidad):</label>
+                        <input type="number" id="car-monthly" min="0" required>
+
+                        <label for="food-cart-monthly">Carrito de Comida (Mensualidad):</label>
+                        <input type="number" id="food-cart-monthly" min="0" required>
+                        
+                        <button type="submit">Actualizar Tarifas</button>
                     </form>
                 </div>
             </div>
         </section>
-    </main>
 
+    </main>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC81uKipArf__Mp9ernUh88E7kzjePdryA",
+            authDomain: "parqueadero-fb51c.firebaseapp.com",
+            projectId: "parqueadero-fb51c",
+            storageBucket: "parqueadero-fb51c.firebasestorage.app",
+            messagingSenderId: "76380635067",
+            appId: "1:76380635067:web:1efaefb6b8b540b4764e9e",
+            measurementId: "G-YRQPFTKDL2"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.db = database;
+        window.dbRef = {
+            vehicles: ref(database, 'vehicles'),
+            rates: ref(database, 'rates'),
+            users: ref(database, 'users')
+        };
+        window.firebase = {
+            push,
+            onValue,
+            update,
+            remove
+        };
+    </script>
     <script type="module" src="script.js"></script>
+
 </body>
 </html>
