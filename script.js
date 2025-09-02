@@ -1,6 +1,9 @@
 const { jsPDF } = window.jspdf;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Definición de la función de utilidad al inicio del script
+    const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
+
     // Definición de elementos del DOM
     const loginSection = document.getElementById('login-section');
     const mainApp = document.getElementById('main-app');
@@ -77,9 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     loadData();
-
-    // Funciones de utilidad
-    const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
 
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
