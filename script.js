@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const othersMonthlyPrice = document.getElementById('others-monthly-price');
     const specialClientSection = document.getElementById('special-client-section');
     const specialClientAdjustment = document.getElementById('special-client-adjustment');
+    const exitCostDisplay = document.getElementById('exit-cost-display');
 
-    // Tarifas iniciales
+    // Tarifas iniciales con estructura completa
     let prices = {
         carro: {
             mediaHora: 3000,
@@ -88,7 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const bikeMonthInput = document.getElementById('bike-month');
             if (bikeMonthInput && prices.moto && prices.moto.mes !== undefined) bikeMonthInput.value = formatNumber(prices.moto.mes);
     
-            if (prices['otros-mensualidad']) {
+            // *** CORRECCIÓN CLAVE AQUÍ ***
+            // Se añaden verificaciones para la estructura anidada de 'otros-mensualidad'
+            if (prices['otros-mensualidad'] && prices['otros-mensualidad'].pequeño) {
                 document.getElementById('other-small-min').value = formatNumber(prices['otros-mensualidad'].pequeño.min);
                 document.getElementById('other-small-max').value = formatNumber(prices['otros-mensualidad'].pequeño.max);
                 document.getElementById('other-small-default').value = formatNumber(prices['otros-mensualidad'].pequeño.mes);
@@ -252,7 +255,13 @@ document.addEventListener('DOMContentLoaded', () => {
         prices.moto.doceHoras = parseValue('bike-12h');
         prices.moto.mes = parseValue('bike-month');
 
+        // *** CORRECCIÓN CLAVE AQUÍ ***
+        // Se asegura que la estructura anidada exista antes de guardar
         if (!prices['otros-mensualidad']) prices['otros-mensualidad'] = {};
+        if (!prices['otros-mensualidad'].pequeño) prices['otros-mensualidad'].pequeño = {};
+        if (!prices['otros-mensualidad'].mediano) prices['otros-mensualidad'].mediano = {};
+        if (!prices['otros-mensualidad'].grande) prices['otros-mensualidad'].grande = {};
+
         prices['otros-mensualidad'].pequeño.min = parseValue('other-small-min');
         prices['otros-mensualidad'].pequeño.max = parseValue('other-small-max');
         prices['otros-mensualidad'].pequeño.mes = parseValue('other-small-default');
@@ -333,7 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
-        if (!vehicle) return;
+        if (!vehicle) {
+            exitCostDisplay.innerHTML = '';
+            return;
+        }
 
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
@@ -372,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentCalculatedCost = totalCost;
-        document.getElementById('exit-cost-display').innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
+        exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
 
     specialClientCheckbox.addEventListener('change', updateCalculatedCost);
@@ -401,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let discount = 0;
         let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
+        const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
 
         let resultHTML = '';
         let receiptData = {};
@@ -415,8 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 monthlyPrice = vehicle.monthlyPrice;
             }
 
-            const entryDay = new Date(vehicle.entryTime).getDate();
-            const exitDay = exitTime.getDate();
             const nextPaymentDate = new Date(vehicle.entryTime);
             nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
 
@@ -477,8 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 originalCost = totalCost;
                 
                 if (isSpecialClient) {
-                    const adjustmentValue = parseFloat(specialClientAdjustment.value) || 0;
-                    discount = (adjustmentValue < 0) ? Math.abs(adjustmentValue) : 0;
                     totalCost = originalCost + adjustmentValue;
                 }
 
@@ -493,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 
                 if (isSpecialClient) {
-                    resultHTML += `<p>Ajuste por cliente especial: <strong>${specialClientAdjustment.value >= 0 ? '+' : ''}$${formatNumber(parseFloat(specialClientAdjustment.value) || 0)} COP</strong></p>`;
+                    resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
                 }
                 
                 resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
@@ -504,11 +513,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     entryTime,
                     exitTime,
                     costoFinal: totalCost,
-                    descuento: discount,
+                    descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
                     esGratis: false,
                     esMensualidad: false,
                     costoOriginal: originalCost,
-                    ajusteEspecial: parseFloat(specialClientAdjustment.value) || 0,
+                    ajusteEspecial: adjustmentValue,
                     tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
                 };
             }
@@ -525,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
+        exitCostDisplay.innerHTML = '';
 
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
