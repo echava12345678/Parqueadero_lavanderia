@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mes: 200000 // Tarifa de comida rápida
         }
     };
+     let activeVehicles = [];
 
     // Usuarios del sistema
     const users = {
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadData();
 
-    let activeVehicles = []; // Se carga con loadData()
+    
 
     // Funciones de utilidad
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
