@@ -400,3 +400,14 @@ footer {
 .size-card .input-group {
     margin-bottom: 10px;
 }
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre el logo y el título */
+}
+
+.header-logo {
+    height: 50px; /* Ajusta el tamaño de tu logo */
+    width: auto;
+}
