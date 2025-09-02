@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Parqueadero 🚗🛵</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo">🅿️</div>
+        <h1>Parqueadero <span>Veloz</span></h1>
+    </header>
+
+    <main>
+        <section id="login-section" class="form-container">
+            <h2>Acceso al Sistema</h2>
+            <form id="login-form">
+                <input type="password" id="password-input" placeholder="Contraseña" required>
+                <button type="submit">Entrar</button>
+            </form>
+            <div id="login-error" class="error-message"></div>
+        </section>
+
+        <section id="dashboard-section" class="hidden">
+            <nav class="tabs">
+                <button class="tab-button active" onclick="showTab('entrada')">Entrada</button>
+                <button class="tab-button" onclick="showTab('salida')">Salida</button>
+                <button class="tab-button" onclick="showTab('mensualidades')">Mensualidades</button>
+                <button class="tab-button" onclick="showTab('admin-panel')">Administración</button>
+            </nav>
+
+            <div id="entrada" class="tab-content active">
+                <h2>Registrar Entrada</h2>
+                <form id="entrada-form">
+                    <input type="text" id="placa-entrada" placeholder="Placa" required>
+                    <div class="select-group">
+                        <select id="tipo-vehiculo-entrada" required>
+                            <option value="">Tipo de Vehículo</option>
+                            <option value="Carro">Carro 🚗</option>
+                            <option value="Moto">Moto 🛵</option>
+                            <option value="Comida Rápida">Food Truck 🍔</option>
+                        </select>
+                        <select id="tipo-pago-entrada" required>
+                            <option value="">Tipo de Pago</option>
+                            <option value="Por Hora">Por Hora</option>
+                            <option value="Mensualidad">Mensualidad</option>
+                        </select>
+                    </div>
+                    <div id="mensualidad-group" class="hidden">
+                        <input type="number" id="precio-mensualidad" placeholder="Precio Mensualidad (COP)">
+                    </div>
+                    <label class="checkbox-container">Cliente Especial
+                        <input type="checkbox" id="cliente-especial-entrada">
+                        <span class="checkmark"></span>
+                    </label>
+                    <button type="submit">Registrar Entrada</button>
+                </form>
+                <div id="entrada-message" class="info-message"></div>
+            </div>
+
+            <div id="salida" class="tab-content hidden">
+                <h2>Registrar Salida</h2>
+                <form id="salida-form">
+                    <input type="text" id="placa-salida" placeholder="Placa" required>
+                    <button type="submit">Calcular Pago</button>
+                </form>
+                <div id="salida-details" class="result-box hidden">
+                    <h3>Detalles de Pago</h3>
+                    <p><strong>Placa:</strong> <span id="salida-placa"></span></p>
+                    <p><strong>Tipo:</strong> <span id="salida-tipo"></span></p>
+                    <p><strong>Tiempo:</strong> <span id="salida-tiempo"></span></p>
+                    <p><strong>Total a Pagar:</strong> <span id="salida-total"></span></p>
+                    <button id="confirmar-salida-btn" class="confirm-btn">Confirmar Salida y Generar Recibo</button>
+                </div>
+                <div id="salida-message" class="info-message"></div>
+            </div>
+
+            <div id="mensualidades" class="tab-content hidden">
+                <h2>Vehículos con Mensualidad</h2>
+                <ul id="mensualidades-list"></ul>
+            </div>
+
+            <div id="admin-panel" class="tab-content hidden">
+                <h2>Panel de Administración ⚙️</h2>
+                <p>⚠️ Solo visible para el administrador</p>
+                <div class="card">
+                    <h3>Precios Por Hora</h3>
+                    <form id="precios-form">
+                        <label for="precio-hora-carro">Carro:</label>
+                        <input type="number" id="precio-hora-carro" placeholder="Precio hora carro">
+                        <label for="precio-hora-moto">Moto:</label>
+                        <input type="number" id="precio-hora-moto" placeholder="Precio hora moto">
+                        <label for="precio-12h-carro">Carro (12h):</label>
+                        <input type="number" id="precio-12h-carro" placeholder="Precio 12h carro">
+                        <label for="precio-12h-moto">Moto (12h):</label>
+                        <input type="number" id="precio-12h-moto" placeholder="Precio 12h moto">
+                        <button type="submit">Actualizar Precios</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
