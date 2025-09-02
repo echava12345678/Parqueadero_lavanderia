@@ -1,153 +1,115 @@
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
+:root {
+    --primary-color: #2c3e50; /* Azul oscuro */
+    --secondary-color: #3498db; /* Azul eléctrico */
+    --background-color: #f4f6f9; /* Gris claro */
+    --card-background: #ffffff; /* Blanco */
+    --text-color: #333; /* Gris oscuro */
+    --border-color: #e0e0e0; /* Gris muy claro */
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 20px;
 }
 
 header {
-    background-color: #4CAF50;
+    background-color: var(--primary-color);
     color: white;
     padding: 20px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-main {
-    width: 90%;
-    max-width: 1200px;
-    margin-top: 20px;
-}
-
-section {
-    background-color: white;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
 }
 
-.hidden {
-    display: none;
+h1 {
+    font-size: 1.8em;
 }
 
-h2, h3 {
-    color: #4CAF50;
-    border-bottom: 2px solid #eee;
+main {
+    max-width: 900px;
+    margin: auto;
+}
+
+h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.5em;
+}
+
+.card {
+    background-color: var(--card-background);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.card h3 {
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 10px;
-    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--secondary-color);
 }
 
 form {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: 15px;
 }
 
-label {
-    font-weight: bold;
-    color: #555;
-}
-
-input[type="text"], 
-input[type="password"], 
+input[type="text"],
+input[type="password"],
 input[type="number"],
 select {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
     width: 100%;
-    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1em;
 }
 
 button {
-    background-color: #4CAF50;
+    background-color: var(--secondary-color);
     color: white;
-    border: none;
     padding: 12px 20px;
-    border-radius: 4px;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 1em;
     transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #45a049;
+    background-color: #2980b9;
 }
 
-.user-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 10px;
-}
-
-.logout-btn {
-    background-color: #f44336;
-    padding: 8px 15px;
-}
-
-.logout-btn:hover {
-    background-color: #d32f2f;
-}
-
-.worker-dashboard, .admin-dashboard {
-    display: grid;
-    gap: 20px;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-
-.form-container {
-    padding: 20px;
-    border: 1px solid #eee;
-    border-radius: 6px;
-}
-
-.parking-list-container {
-    margin-top: 30px;
-}
-
-#parking-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-#parking-list li {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.error-message {
-    color: #d32f2f;
-    text-align: center;
-    font-weight: bold;
-}
-
-#payment-details p {
-    font-size: 1.1em;
+.price-inputs label {
+    display: block;
     margin-top: 10px;
 }
 
-.discount-options {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+ul {
+    list-style: none;
+    padding: 0;
 }
 
-.discount-options input {
-    width: 80px;
+ul li {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#result {
+    text-align: center;
 }
