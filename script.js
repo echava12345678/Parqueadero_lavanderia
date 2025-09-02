@@ -52,14 +52,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const storedPrices = localStorage.getItem('parkingPrices');
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
-            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
-            document.getElementById('car-hour').value = prices.carro.hora;
-            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
-            document.getElementById('bike-hour').value = prices.moto.hora;
-            document.getElementById('car-12h').value = prices.carro.doceHoras;
-            document.getElementById('bike-12h').value = prices.moto.doceHoras;
-            document.getElementById('car-month').value = prices.carro.mes;
-            document.getElementById('food-month').value = prices['otros-mensualidad'].mes;
+            
+            // Asignar valores solo si las propiedades existen para evitar errores
+            if (prices.carro) {
+                document.getElementById('car-half-hour').value = prices.carro.mediaHora;
+                document.getElementById('car-hour').value = prices.carro.hora;
+                document.getElementById('car-12h').value = prices.carro.doceHoras;
+                document.getElementById('car-month').value = prices.carro.mes;
+            }
+            
+            if (prices.moto) {
+                document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
+                document.getElementById('bike-hour').value = prices.moto.hora;
+                document.getElementById('bike-12h').value = prices.moto.doceHoras;
+            }
+    
+            if (prices['otros-mensualidad']) {
+                document.getElementById('food-month').value = prices['otros-mensualidad'].mes;
+            }
         }
 
         activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
