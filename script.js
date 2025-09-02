@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
             
-            // Asignar valores a los campos de Carro si los elementos y propiedades existen
             const carHalfHourInput = document.getElementById('car-half-hour');
             if (carHalfHourInput && prices.carro && prices.carro.mediaHora !== undefined) carHalfHourInput.value = formatNumber(prices.carro.mediaHora);
             
@@ -69,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const carMonthInput = document.getElementById('car-month');
             if (carMonthInput && prices.carro && prices.carro.mes !== undefined) carMonthInput.value = formatNumber(prices.carro.mes);
             
-            // Asignar valores a los campos de Moto si los elementos y propiedades existen
             const bikeHalfHourInput = document.getElementById('bike-half-hour');
             if (bikeHalfHourInput && prices.moto && prices.moto.mediaHora !== undefined) bikeHalfHourInput.value = formatNumber(prices.moto.mediaHora);
             
@@ -82,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const bikeMonthInput = document.getElementById('bike-month');
             if (bikeMonthInput && prices.moto && prices.moto.mes !== undefined) bikeMonthInput.value = formatNumber(prices.moto.mes);
     
-            // Asignar valores a los campos de Otros si los elementos y propiedades existen
             const foodMonthInput = document.getElementById('food-month');
             if (foodMonthInput && prices['otros-mensualidad'] && prices['otros-mensualidad'].mes !== undefined) foodMonthInput.value = formatNumber(prices['otros-mensualidad'].mes);
         }
@@ -195,25 +192,31 @@ document.addEventListener('DOMContentLoaded', () => {
     savePricesBtn.addEventListener('click', () => {
         const parseValue = (id) => {
             const element = document.getElementById(id);
-            return element ? parseInt(element.value.replace(/\./g, '')) : 0;
+            if (!element) return 0;
+            const value = element.value.replace(/\./g, '');
+            return parseInt(value) || 0;
         };
         
+        // Verifica si los objetos de precios existen antes de asignar valores
+        if (!prices.carro) prices.carro = {};
         prices.carro.mediaHora = parseValue('car-half-hour');
         prices.carro.hora = parseValue('car-hour');
         prices.carro.doceHoras = parseValue('car-12h');
         prices.carro.mes = parseValue('car-month');
         
+        if (!prices.moto) prices.moto = {};
         prices.moto.mediaHora = parseValue('bike-half-hour');
         prices.moto.hora = parseValue('bike-hour');
         prices.moto.doceHoras = parseValue('bike-12h');
         prices.moto.mes = parseValue('bike-month');
 
+        // Esta es la corrección clave para evitar el error
+        if (!prices['otros-mensualidad']) prices['otros-mensualidad'] = {};
         prices['otros-mensualidad'].mes = parseValue('food-month');
         
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
         
-        // Recargar los datos para que se muestren con el formato correcto
         loadData();
     });
 
@@ -311,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pricePerHour = prices[vehicleType].hora;
             const priceFor12Hours = prices[vehicleType].doceHoras;
 
-            // Lógica de cobro por tiempo corregida
+            // Lógica de cobro por tiempo
             if (diffInMinutes <= 30) {
                 totalCost = priceHalfHour;
             } else {
@@ -319,8 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalCost = totalHours * pricePerHour;
             }
             
-            // Lógica para 12 horas
-            if (diffInMinutes >= 720) { // 12 horas * 60 minutos
+            if (diffInMinutes >= 720) {
                 totalCost = priceFor12Hours;
             }
 
