@@ -55,20 +55,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Asignar valores solo si las propiedades existen para evitar errores
             if (prices.carro) {
-                document.getElementById('car-half-hour').value = prices.carro.mediaHora;
-                document.getElementById('car-hour').value = prices.carro.hora;
-                document.getElementById('car-12h').value = prices.carro.doceHoras;
-                document.getElementById('car-month').value = prices.carro.mes;
+                document.getElementById('car-half-hour').value = formatNumber(prices.carro.mediaHora);
+                document.getElementById('car-hour').value = formatNumber(prices.carro.hora);
+                document.getElementById('car-12h').value = formatNumber(prices.carro.doceHoras);
+                document.getElementById('car-month').value = formatNumber(prices.carro.mes);
             }
             
             if (prices.moto) {
-                document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
-                document.getElementById('bike-hour').value = prices.moto.hora;
-                document.getElementById('bike-12h').value = prices.moto.doceHoras;
+                document.getElementById('bike-half-hour').value = formatNumber(prices.moto.mediaHora);
+                document.getElementById('bike-hour').value = formatNumber(prices.moto.hora);
+                document.getElementById('bike-12h').value = formatNumber(prices.moto.doceHoras);
+                document.getElementById('bike-month').value = formatNumber(prices.moto.mes);
             }
     
             if (prices['otros-mensualidad']) {
-                document.getElementById('food-month').value = prices['otros-mensualidad'].mes;
+                document.getElementById('food-month').value = formatNumber(prices['otros-mensualidad'].mes);
             }
         }
 
@@ -181,14 +182,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Guardar tarifas del administrador
     savePricesBtn.addEventListener('click', () => {
-        prices.carro.mediaHora = parseInt(document.getElementById('car-half-hour').value);
-        prices.carro.hora = parseInt(document.getElementById('car-hour').value);
-        prices.moto.mediaHora = parseInt(document.getElementById('bike-half-hour').value);
-        prices.moto.hora = parseInt(document.getElementById('bike-hour').value);
-        prices.carro.doceHoras = parseInt(document.getElementById('car-12h').value);
-        prices.moto.doceHoras = parseInt(document.getElementById('bike-12h').value);
-        prices.carro.mes = parseInt(document.getElementById('car-month').value);
-        prices['otros-mensualidad'].mes = parseInt(document.getElementById('food-month').value);
+        const parseValue = (id) => parseInt(document.getElementById(id).value.replace(/\./g, ''));
+        
+        prices.carro.mediaHora = parseValue('car-half-hour');
+        prices.carro.hora = parseValue('car-hour');
+        prices.carro.doceHoras = parseValue('car-12h');
+        prices.carro.mes = parseValue('car-month');
+        
+        prices.moto.mediaHora = parseValue('bike-half-hour');
+        prices.moto.hora = parseValue('bike-hour');
+        prices.moto.doceHoras = parseValue('bike-12h');
+        
+        // Se agregó la validación para `bike-month`
+        const bikeMonthInput = document.getElementById('bike-month');
+        if (bikeMonthInput) {
+            prices.moto.mes = parseValue('bike-month');
+        } else {
+            // Manejar el caso si el input no existe
+            prices.moto.mes = prices.moto.mes || 0;
+        }
+
+        prices['otros-mensualidad'].mes = parseValue('food-month');
+        
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
     });
