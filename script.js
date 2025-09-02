@@ -197,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return parseInt(value) || 0;
         };
         
-        // Verifica si los objetos de precios existen antes de asignar valores
         if (!prices.carro) prices.carro = {};
         prices.carro.mediaHora = parseValue('car-half-hour');
         prices.carro.hora = parseValue('car-hour');
@@ -210,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         prices.moto.doceHoras = parseValue('bike-12h');
         prices.moto.mes = parseValue('bike-month');
 
-        // Esta es la corrección clave para evitar el error
         if (!prices['otros-mensualidad']) prices['otros-mensualidad'] = {};
         prices['otros-mensualidad'].mes = parseValue('food-month');
         
@@ -314,15 +312,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const pricePerHour = prices[vehicleType].hora;
             const priceFor12Hours = prices[vehicleType].doceHoras;
 
-            // Lógica de cobro por tiempo
+            // Lógica de cobro por tiempo corregida
             if (diffInMinutes <= 30) {
-                totalCost = priceHalfHour;
+                totalCost = 0;
+                resultHTML = `
+                    <p>Placa: <strong>${vehicle.plate}</strong></p>
+                    <p>Tipo: <strong>${vehicle.type}</strong></p>
+                    <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
+                    <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
+                    <p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>
+                `;
+                resultContent.innerHTML = resultHTML;
+                resultDiv.style.display = 'block';
+                resultDiv.classList.add('fade-in');
+
+                activeVehicles.splice(vehicleIndex, 1);
+                localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
+                updateActiveVehiclesList();
+                exitForm.reset();
+                specialClientCheckbox.checked = false;
+
+                // No se genera recibo porque no hay cobro
+                return;
             } else {
                 const totalHours = Math.ceil(diffInMinutes / 60);
                 totalCost = totalHours * pricePerHour;
             }
             
-            if (diffInMinutes >= 720) {
+            if (diffInMinutes >= 720) { // 12 horas * 60 minutos
                 totalCost = priceFor12Hours;
             }
 
@@ -387,6 +404,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
         if (!receiptData) {
             showNotification('No hay un recibo para descargar.', 'error');
+            return;
+        }
+        
+        if (receiptData.costoFinal === 0) {
+            showNotification('No se puede generar recibo de un servicio gratuito.', 'info');
             return;
         }
 
