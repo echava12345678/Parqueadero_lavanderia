@@ -56,6 +56,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plateEntryInput = document.getElementById('plate-entry');
     const plateLabel = document.getElementById('plate-label');
     const otherPriceLabel = document.getElementById('other-price-label');
+    const vehicleSearchInput = document.getElementById('vehicle-search');
+
+    if(vehicleSearchInput) {
+        vehicleSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.trim().toUpperCase();
+            if (searchTerm === '') {
+                updateActiveVehiclesList('all');
+            } else {
+                const filteredVehicles = activeVehicles.filter(vehicle => 
+                    (vehicle.plate && vehicle.plate.toUpperCase().includes(searchTerm)) ||
+                    (vehicle.description && vehicle.description.toUpperCase().includes(searchTerm))
+                );
+                updateActiveVehiclesList('all', filteredVehicles);
+            }
+        });
+    }
 
     // Definición de elementos del DOM de lavandería
     const laundryEntryForm = document.getElementById('laundry-entry-form');
@@ -86,9 +102,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             'pequeño': { min: 10000, max: 15000, noche: 12000 },
             'mediano': { min: 15100, max: 20000, noche: 18000 },
             'grande': { min: 20100, max: 30000, noche: 25000 }
+        },
+        'carro-12h': {
+            doceHoras: 30000,
+            mediaHora: 3000 // Mantener para el cálculo intermedio si es necesario
+        },
+        'moto-12h': {
+            doceHoras: 15000,
+            mediaHora: 2000 // Mantener para el cálculo intermedio si es necesario
         }
     };
-
                                                                                                                                                                                                                                                                                                                 // Usuarios del sistema
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         const users = {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             'admin': 'admin123',
@@ -119,9 +142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
     };
 
-    const updateActiveVehiclesList = (filterType = 'all') => {
+    const updateActiveVehiclesList = (filterType = 'all', vehicleList = null) => {
         activeVehiclesList.innerHTML = '';
-        const filteredVehicles = activeVehicles.filter(v => {
+        const vehiclesToDisplay = vehicleList || activeVehicles.filter(v => {
             if (filterType === 'all') return true;
             if (filterType === 'mensualidad') {
                 return v.type.includes('mensualidad');
@@ -129,13 +152,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (filterType === 'otros-noche') {
                 return v.type.includes('otros-noche');
             }
+            if (filterType === '12h') {
+                return v.type.includes('12h');
+            }
             return v.type === filterType;
         });
 
-        if (filteredVehicles.length === 0) {
+        if (vehiclesToDisplay.length === 0) {
             activeVehiclesList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay vehículos activos de este tipo.</li>';
         } else {
-            filteredVehicles.forEach(v => {
+            vehiclesToDisplay.forEach(v => {
                 const li = document.createElement('li');
                 let extraInfo = '';
                 let displayPlate = v.plate;
@@ -153,6 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     };
+    
 
     const updateActiveLaundryList = () => {
         laundryList.innerHTML = '';
@@ -415,6 +442,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             'grande': { min: parseNumber(document.getElementById('other-night-large-min').value), max: parseNumber(document.getElementById('other-night-large-max').value), noche: parseNumber(document.getElementById('other-night-large-default').value) }
         };
 
+        // Actualizar precios de 12h
+        prices['carro-12h'] = { doceHoras: parseNumber(document.getElementById('car-12h').value) };
+        prices['moto-12h'] = { doceHoras: parseNumber(document.getElementById('bike-12h').value) };
+
         localStorage.setItem('parkingPrices', JSON.stringify(prices));
         showNotification('Tarifas actualizadas correctamente.', 'success');
         loadData();
@@ -517,26 +548,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             specialClientSection.style.display = 'none';
             return;
         }
+
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+
         let totalCost = 0;
+        
+        const vehicleType = vehicle.type.replace('-12h', ''); // Maneja tipos 'carro' y 'moto'
+
         if (diffInMinutes <= 30) {
             totalCost = 0;
-        } else if (diffInMinutes <= 60) {
-            totalCost = prices[vehicle.type].mediaHora;
         } else {
-            const vehicleType = vehicle.type;
-            const pricePerHour = prices[vehicleType].hora;
-            const priceFor12Hours = prices[vehicleType].doceHoras;
-            const totalHours = Math.ceil(diffInMinutes / 60);
-            totalCost = totalHours * pricePerHour;
-            if (diffInMinutes >= 720) {
-                totalCost = priceFor12Hours;
+            const mediaHoraRate = prices[vehicleType].mediaHora;
+            const twelveHourRate = prices[vehicle.type.includes('12h') ? vehicle.type : vehicleType].doceHoras;
+
+            if (diffInMinutes >= 720) { // 12 horas en minutos
+                totalCost = twelveHourRate;
+            } else {
+                const numHalfHours = Math.ceil(diffInMinutes / 30);
+                totalCost = numHalfHours * mediaHoraRate;
             }
         }
+        
         let originalCost = totalCost;
+
         if (specialClientCheckbox.checked) {
             const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
             totalCost = originalCost + adjustmentValue;
@@ -548,12 +585,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             notificationArea.style.display = 'none';
         }
+
         currentCalculatedCost = totalCost;
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
 
     specialClientCheckbox.addEventListener('change', updateCalculatedCost);
     specialClientAdjustment.addEventListener('input', updateCalculatedCost);
+
     document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
     // Registrar salida y calcular costo
@@ -630,7 +669,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 costoOriginal: nightPrice
             };
 
-        } else { // Carros y Motos por hora
+        } else { // Carros y Motos por hora o 12h
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -652,32 +691,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
             } else {
-                const vehicleType = vehicle.type;
-                if (diffInMinutes <= 60) {
-                    totalCost = prices[vehicleType].mediaHora;
-                } else {
-                    const totalHours = Math.ceil(diffInMinutes / 60);
-                    totalCost = totalHours * prices[vehicleType].hora;
+                const vehicleTypeBase = vehicle.type.replace('-12h', '');
+                let mediaHoraRate = prices[vehicleTypeBase].mediaHora;
+                let twelveHourRate = prices[vehicleTypeBase].doceHoras;
+                
+                if (vehicle.type.includes('12h')) {
+                    twelveHourRate = prices[vehicle.type].doceHoras;
+                    // Asegurarse de que mediaHoraRate para tipos 12h sea la misma que la base
+                    mediaHoraRate = prices[vehicleTypeBase].mediaHora;
                 }
+                
+                const totalHalfHours = Math.ceil(diffInMinutes / 30);
+                totalCost = totalHalfHours * mediaHoraRate;
+                
                 if (diffInMinutes >= 720) {
-                    totalCost = prices[vehicleType].doceHoras;
+                    totalCost = twelveHourRate;
                 }
+                
                 originalCost = totalCost;
+                
                 if (isSpecialClient) {
                     totalCost = originalCost + adjustmentValue;
                 }
+
                 const totalHoursDisplay = Math.floor(diffInMinutes / 60);
                 const totalMinutesDisplay = diffInMinutes % 60;
+
                 resultHTML = `
                     <p>Placa: <strong>${vehicle.plate}</strong></p>
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
                     <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
                     <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
                 `;
+                
                 if (isSpecialClient) {
                     resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
                 }
+                
                 resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
+
                 receiptData = {
                     plate: vehicle.plate,
                     type: vehicle.type,
@@ -687,6 +739,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
                     esGratis: false,
                     esMensualidad: false,
+                    esDoceHoras: vehicle.type.includes('12h'),
                     costoOriginal: originalCost,
                     ajusteEspecial: adjustmentValue,
                     tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
