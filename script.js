@@ -1,24 +1,6 @@
-// Archivo JavaScript para la aplicación de gestión de parqueadero.
-// Este script maneja toda la lógica de la interfaz de usuario y la interacción con Firebase Firestore.
-
-// Importaciones de Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-
 const { jsPDF } = window.jspdf;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Variables globales para Firebase y la aplicación
-    let app;
-    let db;
-    let auth;
-    let userId;
-    let activeVehiclesData = {};
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
@@ -86,7 +68,54 @@ document.addEventListener('DOMContentLoaded', () => {
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
 
-    // Funciones de utilidad y de la UI
+    // Cargar tarifas y vehículos desde localStorage
+    const loadData = () => {
+        const storedPrices = localStorage.getItem('parkingPrices');
+        if (storedPrices) {
+            prices = JSON.parse(storedPrices);
+        }
+
+        // Cargar precios en los campos de administración
+        if (prices.carro) {
+            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
+            document.getElementById('car-hour').value = prices.carro.hora;
+            document.getElementById('car-12h').value = prices.carro.doceHoras;
+            document.getElementById('car-month').value = prices.carro.mes;
+        }
+        if (prices.moto) {
+            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
+            document.getElementById('bike-hour').value = prices.moto.hora;
+            document.getElementById('bike-12h').value = prices.moto.doceHoras;
+            document.getElementById('bike-month').value = prices.moto.mes;
+        }
+        if (prices['otros-mensualidad']) {
+            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
+            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
+            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
+            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
+            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
+            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
+            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
+            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
+            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
+        }
+        if (prices['otros-noche']) {
+            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
+            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
+            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
+            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
+            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
+            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
+            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
+            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
+            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
+        }
+
+        activeVehicles = JSON.parse(localStorage.getItem('activeVehicles')) || [];
+    };
+
+    loadData();
+
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
         notificationArea.className = `message ${type}-message`;
@@ -99,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateActiveVehiclesList = (filterType = 'all') => {
         activeVehiclesList.innerHTML = '';
-        const filteredVehicles = Object.values(activeVehiclesData).filter(v => {
+        const filteredVehicles = activeVehicles.filter(v => {
             if (filterType === 'all') return true;
             if (filterType === 'mensualidad') {
                 return v.type.includes('mensualidad');
@@ -163,118 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    //---------------------------------------------------------
-    // Lógica de Firebase
-    //---------------------------------------------------------
-    
-    const initializeFirebase = async () => {
-        try {
-            if (Object.keys(firebaseConfig).length > 0) {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                userId = auth.currentUser.uid;
-                console.log("Firebase inicializado y usuario autenticado.");
-                
-                document.getElementById('user-id-display').textContent = `ID de Usuario: ${userId}`;
-                showApp();
-                listenForVehicles();
-                loadAdminPrices();
-            } else {
-                showNotification("Error: Configuración de Firebase no encontrada.", 'error');
-            }
-        } catch (e) {
-            console.error("Error al inicializar Firebase o autenticar:", e);
-            showNotification("Error de inicialización. Por favor, revisa la configuración.", 'error');
-        }
-    };
-
-    const listenForVehicles = () => {
-        if (!db || !userId) { return; }
-        const vehiclesColRef = collection(db, `artifacts/${appId}/users/${userId}/vehicles`);
-        
-        onSnapshot(vehiclesColRef, (snapshot) => {
-            activeVehiclesData = {};
-            if (snapshot.empty) {
-                activeVehiclesList.innerHTML = '<li>No hay vehículos activos.</li>';
-            } else {
-                snapshot.docs.forEach(doc => {
-                    const data = doc.data();
-                    activeVehiclesData[data.plate.toUpperCase()] = { ...data, id: doc.id };
-                });
-            }
-            updateActiveVehiclesList('all');
-        }, (error) => {
-            console.error("Error al escuchar los vehículos:", error);
-            showNotification("Error al cargar los vehículos activos.", 'error');
-        });
-    };
-
-    const loadAdminPrices = async () => {
-        if (!db || !userId) return;
-        try {
-            const pricesDocRef = doc(db, `artifacts/${appId}/users/${userId}/admin_prices`, "current");
-            const pricesDocSnap = await getDoc(pricesDocRef);
-            if (pricesDocSnap.exists()) {
-                prices = pricesDocSnap.data();
-                updateAdminPanelUI();
-                console.log("Tarifas de administración cargadas:", prices);
-            } else {
-                console.log("No se encontraron tarifas de administración. Usando valores predeterminados.");
-                updateAdminPanelUI();
-            }
-        } catch (e) {
-            console.error("Error al cargar tarifas:", e);
-        }
-    };
-
-    const updateAdminPanelUI = () => {
-        if (prices.carro) {
-            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
-            document.getElementById('car-hour').value = prices.carro.hora;
-            document.getElementById('car-12h').value = prices.carro.doceHoras;
-            document.getElementById('car-month').value = prices.carro.mes;
-        }
-        if (prices.moto) {
-            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
-            document.getElementById('bike-hour').value = prices.moto.hora;
-            document.getElementById('bike-12h').value = prices.moto.doceHoras;
-            document.getElementById('bike-month').value = prices.moto.mes;
-        }
-        if (prices['otros-mensualidad']) {
-            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
-            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
-            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
-            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
-            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
-            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
-            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
-            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
-            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
-        }
-        if (prices['otros-noche']) {
-            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
-            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
-            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
-            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
-            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
-            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
-            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
-            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
-            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
-        }
-    };
-
-    // Funciones de Autenticación y UI
+    // Funciones de Autenticación
     const login = (username, password) => {
         if (users[username] === password) {
+            localStorage.setItem('currentUser', username);
+            loginMessage.style.display = 'none';
             showApp(username);
         } else {
             loginMessage.textContent = 'Usuario o contraseña incorrectos.';
@@ -288,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mainApp.style.display = 'block';
         btnLogin.style.display = 'none';
         btnLogout.style.display = 'inline';
+
         if (user === 'admin') {
             adminTabButton.style.display = 'inline-flex';
         } else {
@@ -298,14 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const logout = () => {
-        auth.signOut().then(() => {
-            loginSection.style.display = 'block';
-            mainApp.style.display = 'none';
-            btnLogin.style.display = 'inline';
-            btnLogout.style.display = 'none';
-            resultDiv.style.display = 'none';
-            loginForm.reset();
-        }).catch(e => console.error("Error al cerrar sesión:", e));
+        localStorage.removeItem('currentUser');
+        loginSection.style.display = 'block';
+        mainApp.style.display = 'none';
+        btnLogin.style.display = 'inline';
+        btnLogout.style.display = 'none';
+        resultDiv.style.display = 'none';
+        loginForm.reset();
     };
 
     // Manejadores de eventos
@@ -318,44 +240,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnLogout.addEventListener('click', logout);
     
-    // Guardar tarifas del administrador
-    savePricesBtn.addEventListener('click', async () => {
-        if (!db || !userId) { showNotification("Error: No se puede guardar. Inicia sesión primero.", 'error'); return; }
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+        showApp(currentUser);
+    } else {
+        loginSection.style.display = 'block';
+        mainApp.style.display = 'none';
+    }
 
-        const newPrices = {
-            carro: {
-                mediaHora: parseNumber(document.getElementById('car-half-hour').value),
-                hora: parseNumber(document.getElementById('car-hour').value),
-                doceHoras: parseNumber(document.getElementById('car-12h').value),
-                mes: parseNumber(document.getElementById('car-month').value)
-            },
-            moto: {
-                mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
-                hora: parseNumber(document.getElementById('bike-hour').value),
-                doceHoras: parseNumber(document.getElementById('bike-12h').value),
-                mes: parseNumber(document.getElementById('bike-month').value)
-            },
-            'otros-mensualidad': {
-                'pequeño': { min: parseNumber(document.getElementById('other-small-min').value), max: parseNumber(document.getElementById('other-small-max').value), mes: parseNumber(document.getElementById('other-small-default').value) },
-                'mediano': { min: parseNumber(document.getElementById('other-medium-min').value), max: parseNumber(document.getElementById('other-medium-max').value), mes: parseNumber(document.getElementById('other-medium-default').value) },
-                'grande': { min: parseNumber(document.getElementById('other-large-min').value), max: parseNumber(document.getElementById('other-large-max').value), mes: parseNumber(document.getElementById('other-large-default').value) }
-            },
-            'otros-noche': {
-                'pequeño': { min: parseNumber(document.getElementById('other-night-small-min').value), max: parseNumber(document.getElementById('other-night-small-max').value), noche: parseNumber(document.getElementById('other-night-small-default').value) },
-                'mediano': { min: parseNumber(document.getElementById('other-night-medium-min').value), max: parseNumber(document.getElementById('other-night-medium-max').value), noche: parseNumber(document.getElementById('other-night-medium-default').value) },
-                'grande': { min: parseNumber(document.getElementById('other-night-large-min').value), max: parseNumber(document.getElementById('other-night-large-max').value), noche: parseNumber(document.getElementById('other-night-large-default').value) }
-            }
+    // Guardar tarifas del administrador
+    savePricesBtn.addEventListener('click', () => {
+        
+        prices.carro = {
+            mediaHora: parseNumber(document.getElementById('car-half-hour').value),
+            hora: parseNumber(document.getElementById('car-hour').value),
+            doceHoras: parseNumber(document.getElementById('car-12h').value),
+            mes: parseNumber(document.getElementById('car-month').value)
+        };
+        
+        prices.moto = {
+            mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
+            hora: parseNumber(document.getElementById('bike-hour').value),
+            doceHoras: parseNumber(document.getElementById('bike-12h').value),
+            mes: parseNumber(document.getElementById('bike-month').value)
         };
 
-        try {
-            const pricesDocRef = doc(db, `artifacts/${appId}/users/${userId}/admin_prices`, "current");
-            await setDoc(pricesDocRef, newPrices);
-            prices = newPrices; // Actualiza la variable local
-            showNotification("Tarifas guardadas exitosamente.", 'success');
-        } catch (e) {
-            console.error("Error al guardar tarifas:", e);
-            showNotification("Error al guardar tarifas. Intenta de nuevo.", 'error');
-        }
+        prices['otros-mensualidad'] = {
+            'pequeño': { min: parseNumber(document.getElementById('other-small-min').value), max: parseNumber(document.getElementById('other-small-max').value), mes: parseNumber(document.getElementById('other-small-default').value) },
+            'mediano': { min: parseNumber(document.getElementById('other-medium-min').value), max: parseNumber(document.getElementById('other-medium-max').value), mes: parseNumber(document.getElementById('other-medium-default').value) },
+            'grande': { min: parseNumber(document.getElementById('other-large-min').value), max: parseNumber(document.getElementById('other-large-max').value), mes: parseNumber(document.getElementById('other-large-default').value) }
+        };
+        
+        prices['otros-noche'] = {
+            'pequeño': { min: parseNumber(document.getElementById('other-night-small-min').value), max: parseNumber(document.getElementById('other-night-small-max').value), noche: parseNumber(document.getElementById('other-night-small-default').value) },
+            'mediano': { min: parseNumber(document.getElementById('other-night-medium-min').value), max: parseNumber(document.getElementById('other-night-medium-max').value), noche: parseNumber(document.getElementById('other-night-medium-default').value) },
+            'grande': { min: parseNumber(document.getElementById('other-night-large-min').value), max: parseNumber(document.getElementById('other-night-large-max').value), noche: parseNumber(document.getElementById('other-night-large-default').value) }
+        };
+
+        localStorage.setItem('parkingPrices', JSON.stringify(prices));
+        showNotification('Tarifas actualizadas correctamente.', 'success');
+        
+        loadData();
     });
 
     // Mostrar/ocultar campos de otros vehículos y cambiar placeholder
@@ -380,81 +305,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Registrar entrada de vehículo
-    entryForm.addEventListener('submit', async (e) => {
+    entryForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!db || !userId) { showNotification("Error: No se puede guardar. Inicia sesión primero.", 'error'); return; }
-
         const plate = document.getElementById('plate-entry').value.trim().toUpperCase();
         const type = document.getElementById('type-entry').value;
 
-        const vehiclesColRef = collection(db, `artifacts/${appId}/users/${userId}/vehicles`);
-        const q = query(vehiclesColRef, where("plate", "==", plate));
-        
-        try {
-            const querySnapshot = await getDocs(q);
-            if (!['otros-mensualidad', 'otros-noche'].includes(type) && !querySnapshot.empty) {
-                showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
+        let description = '';
+        if (['otros-mensualidad', 'otros-noche'].includes(type)) {
+            description = plate;
+        }
+
+        if (activeVehicles.find(v => v.plate === plate) && !['otros-mensualidad', 'otros-noche'].includes(type)) {
+            showNotification(`¡La placa ${plate} ya se encuentra registrada!`, 'error');
+            return;
+        }
+
+        let otherVehicleSize = null;
+        let otherPrice = null;
+
+        if (type === 'otros-mensualidad' || type === 'otros-noche') {
+            otherVehicleSize = othersVehicleSize.value;
+            const priceValue = othersMonthlyPrice.value;
+            if (!priceValue) {
+                showNotification("Por favor, ingrese un precio para el vehículo.", 'error');
                 return;
             }
-
-            let description = '';
-            let otherVehicleSize = null;
-            let otherPrice = null;
+            otherPrice = parseNumber(priceValue);
             
-            if (['otros-mensualidad', 'otros-noche'].includes(type)) {
-                description = plate;
-                otherVehicleSize = othersVehicleSize.value;
-                const priceValue = othersMonthlyPrice.value;
-                if (!priceValue) {
-                    showNotification("Por favor, ingrese un precio para el vehículo.", 'error');
-                    return;
-                }
-                otherPrice = parseNumber(priceValue);
-                
-                const sizePrices = prices[type][otherVehicleSize];
-                if (otherPrice < sizePrices.min || otherPrice > sizePrices.max) {
-                    showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
-                    return;
-                }
+            const sizePrices = prices[type][otherVehicleSize];
+            if (otherPrice < sizePrices.min || otherPrice > sizePrices.max) {
+                showNotification(`El precio debe estar entre $${formatNumber(sizePrices.min)} y $${formatNumber(sizePrices.max)} COP.`, 'error');
+                return;
             }
-
-            const newVehicle = {
-                plate,
-                description,
-                type,
-                entryTime: new Date().toISOString(),
-                price: otherPrice,
-                size: otherVehicleSize
-            };
-
-            await addDoc(vehiclesColRef, newVehicle);
-            showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
-            entryForm.reset();
-            othersTypeContainer.style.display = 'none';
-        } catch (e) {
-            console.error("Error al registrar el vehículo:", e);
-            showNotification("Error al registrar el vehículo. Intenta de nuevo.", 'error');
         }
+
+        const newVehicle = {
+            plate,
+            description,
+            type,
+            entryTime: new Date().toISOString(),
+            price: otherPrice,
+            size: otherVehicleSize
+        };
+        activeVehicles.push(newVehicle);
+        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
+        showNotification(`Entrada de ${type} con placa ${plate} registrada.`, 'success');
+        entryForm.reset();
+        othersTypeContainer.style.display = 'none';
+        updateActiveVehiclesList();
     });
 
     // Controlar visibilidad de la sección de cliente especial
     let currentCalculatedCost = 0;
     document.getElementById('plate-exit').addEventListener('input', () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicle = activeVehiclesData[plate];
+        const vehicle = activeVehicles.find(v => v.plate === plate);
         if (vehicle && !['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
             specialClientSection.style.display = 'flex';
         } else {
             specialClientSection.style.display = 'none';
             specialClientCheckbox.checked = false;
         }
-        updateCalculatedCost();
     });
 
     // Calcular costo en tiempo real con ajustes de cliente especial
     const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicle = activeVehiclesData[plate];
+        const vehicle = activeVehicles.find(v => v.plate === plate);
         if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
             exitCostDisplay.innerHTML = '';
             specialClientSection.style.display = 'none';
@@ -509,18 +426,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
 
     // Registrar salida y calcular costo
-    exitForm.addEventListener('submit', async (e) => {
+    exitForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!db || !userId) { showNotification("Error: No se puede procesar. Inicia sesión primero.", 'error'); return; }
-
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
-        const vehicle = activeVehiclesData[plate];
+        const vehicleIndex = activeVehicles.findIndex(v => v.plate === plate || v.description === plate);
 
-        if (!vehicle) {
+        if (vehicleIndex === -1) {
             showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
             return;
         }
 
+        const vehicle = activeVehicles[vehicleIndex];
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
@@ -537,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vehicle.type.includes('otros')) {
             displayPlate = vehicle.description;
         }
+
 
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
             let monthlyPrice = 0;
@@ -671,20 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
         resultContent.innerHTML = resultHTML;
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
+
+        activeVehicles.splice(vehicleIndex, 1);
+        localStorage.setItem('activeVehicles', JSON.stringify(activeVehicles));
+        updateActiveVehiclesList();
         exitForm.reset();
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
         exitCostDisplay.innerHTML = '';
-        
-        // Guardar recibo en Firestore
-        const receiptColRef = collection(db, `artifacts/${appId}/users/${userId}/receipts`);
-        await addDoc(receiptColRef, receiptData);
-
-        // Eliminar el documento de Firestore después de registrar la salida
-        const docRef = doc(db, `artifacts/${appId}/users/${userId}/vehicles`, vehicle.id);
-        await deleteDoc(docRef);
-        showNotification(`El vehículo con placa ${plate} ha salido exitosamente.`, 'success');
 
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
@@ -791,6 +703,5 @@ document.addEventListener('DOMContentLoaded', () => {
         showNotification('Recibo PDF generado con éxito.', 'success');
     });
 
-    // Iniciar la aplicación de Firebase
-    initializeFirebase();
+    updateActiveVehiclesList();
 });
