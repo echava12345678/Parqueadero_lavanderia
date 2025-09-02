@@ -69,59 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
 
-    // Cargar tarifas y vehículos desde localStorage (manteniendo el de precios en localStorage)
-    const loadData = async () => {
-        const storedPrices = localStorage.getItem('parkingPrices');
-        if (storedPrices) {
-            prices = JSON.parse(storedPrices);
-        }
-
-        // Cargar precios en los campos de administración
-        if (prices.carro) {
-            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
-            document.getElementById('car-hour').value = prices.carro.hora;
-            document.getElementById('car-12h').value = prices.carro.doceHoras;
-            document.getElementById('car-month').value = prices.carro.mes;
-        }
-        if (prices.moto) {
-            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
-            document.getElementById('bike-hour').value = prices.moto.hora;
-            document.getElementById('bike-12h').value = prices.moto.doceHoras;
-            document.getElementById('bike-month').value = prices.moto.mes;
-        }
-        if (prices['otros-mensualidad']) {
-            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
-            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
-            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
-            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
-            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
-            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
-            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
-            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
-            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
-        }
-        if (prices['otros-noche']) {
-            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
-            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
-            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
-            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
-            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
-            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
-            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
-            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
-            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
-        }
-        
-        // Cargar vehículos desde Firestore
-        const vehiclesCol = collection(window.db, 'activeVehicles');
-        const vehicleSnapshot = await getDocs(vehiclesCol);
-        activeVehicles = vehicleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        updateActiveVehiclesList();
-    };
-
-    await loadData();
-
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
         notificationArea.className = `message ${type}-message`;
@@ -166,7 +113,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     };
-    
+
+    // Cargar tarifas y vehículos desde localStorage (manteniendo el de precios en localStorage)
+    const loadData = async () => {
+        const storedPrices = localStorage.getItem('parkingPrices');
+        if (storedPrices) {
+            prices = JSON.parse(storedPrices);
+        }
+
+        // Cargar precios en los campos de administración
+        if (prices.carro) {
+            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
+            document.getElementById('car-hour').value = prices.carro.hora;
+            document.getElementById('car-12h').value = prices.carro.doceHoras;
+            document.getElementById('car-month').value = prices.carro.mes;
+        }
+        if (prices.moto) {
+            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
+            document.getElementById('bike-hour').value = prices.moto.hora;
+            document.getElementById('bike-12h').value = prices.moto.doceHoras;
+            document.getElementById('bike-month').value = prices.moto.mes;
+        }
+        if (prices['otros-mensualidad']) {
+            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
+            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
+            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
+            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
+            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
+            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
+            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
+            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
+            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
+        }
+        if (prices['otros-noche']) {
+            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
+            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
+            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
+            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
+            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
+            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
+            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
+            document.getElementById('other-night-large-max'].value = prices['otros-noche'].grande.max;
+            document.getElementById('other-night-large-default'].value = prices['otros-noche'].grande.noche;
+        }
+        
+        // Cargar vehículos desde Firestore
+        const vehiclesCol = collection(window.db, 'activeVehicles');
+        const vehicleSnapshot = await getDocs(vehiclesCol);
+        activeVehicles = vehicleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        updateActiveVehiclesList();
+    };
+
     // Filtros de vehículos activos
     document.querySelectorAll('.filter-button').forEach(button => {
         button.addEventListener('click', () => {
@@ -724,5 +722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showNotification('Recibo PDF generado con éxito.', 'success');
     });
 
-    updateActiveVehiclesList();
+    // Llamada inicial para cargar los datos y actualizar la lista de vehículos.
+    // Esto se hace al final para asegurar que todas las funciones ya estén definidas.
+    await loadData();
 });
