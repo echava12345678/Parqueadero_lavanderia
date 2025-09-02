@@ -343,3 +343,60 @@ footer {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- NUEVOS ESTILOS PARA EL PANEL DE ADMINISTRACIÓN --- */
+
+/* Contenedor principal para todas las tarifas */
+.admin-prices-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+/* Sección de otros vehículos (tarjeta principal) */
+.other-vehicle-prices {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+.other-vehicle-prices h4 {
+    font-size: 1.2rem;
+    color: #34495e;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Contenedor para las tarjetas de tamaño */
+.size-prices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+/* Estilos para cada tarjeta de tamaño (pequeño, mediano, grande) */
+.size-card {
+    background-color: #ffffff;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.size-card h5 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Mejora la separación de los grupos de input dentro de las tarjetas */
+.size-card .input-group {
+    margin-bottom: 10px;
+}
