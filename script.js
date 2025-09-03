@@ -704,9 +704,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 if (diffInMinutes >= 720) { // 12 horas en minutos
                     totalCost = rates.doceHoras;
+                } else if (diffInMinutes <= 60) {
+                    totalCost = rates.mediaHora;
                 } else {
-                    const numHalfHours = Math.ceil(diffInMinutes / 30);
-                    totalCost = numHalfHours * rates.mediaHora;
+                    const totalHours = Math.ceil(diffInMinutes / 60);
+                    totalCost = totalHours * rates.hora;
                 }
                 
                 originalCost = totalCost;
