@@ -704,11 +704,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 if (diffInMinutes >= 720) { // 12 horas en minutos
                     totalCost = rates.doceHoras;
-                } else if (diffInMinutes <= 60) {
-                    totalCost = rates.mediaHora;
                 } else {
-                    const totalHours = Math.ceil(diffInMinutes / 60);
-                    totalCost = totalHours * rates.hora;
+                    const numHalfHours = Math.ceil(diffInMinutes / 30);
+                    totalCost = numHalfHours * rates.mediaHora;
                 }
                 
                 originalCost = totalCost;
@@ -753,6 +751,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
 
+        // Actualizar el costo en la sección de salida
+        exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
+
         try {
             await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
@@ -766,7 +767,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
-        exitCostDisplay.innerHTML = '';
 
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
