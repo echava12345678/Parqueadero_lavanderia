@@ -700,6 +700,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (vehicle.type.includes('12h')) {
                     twelveHourRate = prices[vehicle.type].doceHoras;
+                    // Asegurarse de que mediaHoraRate para tipos 12h sea la misma que la base
                     mediaHoraRate = prices[vehicleTypeBase].mediaHora;
                 }
                 
