@@ -543,6 +543,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
+
+        // Salir si no se encuentra el vehículo o si es un tipo con tarifa fija
         if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
             exitCostDisplay.innerHTML = '';
             specialClientSection.style.display = 'none';
@@ -556,7 +558,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let totalCost = 0;
         
-        const vehicleType = vehicle.type.replace('-12h', ''); // Maneja tipos 'carro' y 'moto'
+        // El cálculo del costo se hace solo para 'carro', 'moto', 'carro-12h' y 'moto-12h'
+        const vehicleType = vehicle.type.replace('-12h', '');
 
         if (diffInMinutes <= 30) {
             totalCost = 0;
@@ -697,7 +700,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (vehicle.type.includes('12h')) {
                     twelveHourRate = prices[vehicle.type].doceHoras;
-                    // Asegurarse de que mediaHoraRate para tipos 12h sea la misma que la base
                     mediaHoraRate = prices[vehicleTypeBase].mediaHora;
                 }
                 
