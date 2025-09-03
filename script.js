@@ -753,7 +753,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
                 };
             }
-        }}
+        }
         resultContent.innerHTML = resultHTML;
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
