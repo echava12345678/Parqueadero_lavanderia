@@ -539,49 +539,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Calcular costo en tiempo real con ajustes de cliente especial
-  const updateCalculatedCost = () => {
+     const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
         const exitCostDisplay = document.getElementById('exit-cost-display');
+        const specialClientSection = document.getElementById('special-client-section-exit');
+        const specialClientCheckbox = document.getElementById('special-client-checkbox-exit');
 
-        // Solo se calcula el costo en tiempo real para vehículos por hora
+        // Salir si no se encuentra el vehículo o si es un tipo con tarifa fija
         if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
-            specialClientSection.style.display = 'none';
-            specialClientCheckbox.checked = false;
             exitCostDisplay.innerHTML = '';
+            specialClientCheckbox.checked = false;
+            specialClientSection.style.display = 'none';
             return;
         }
 
         specialClientSection.style.display = 'flex';
-        
+
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+
         let totalCost = 0;
+        const baseType = vehicle.type.includes('12h') ? vehicle.type.replace('-12h', '') : vehicle.type;
+        const rates = prices[baseType];
 
         if (diffInMinutes <= 30) {
             totalCost = 0;
         } else {
-            const vehicleType = vehicle.type;
-            
-            if (diffInMinutes <= 60) {
-                 totalCost = prices[vehicleType].mediaHora;
+            if (diffInMinutes >= 720) { // 12 horas en minutos
+                totalCost = rates.doceHoras;
+            } else if (diffInMinutes <= 60) {
+                totalCost = rates.mediaHora;
             } else {
                 const totalHours = Math.ceil(diffInMinutes / 60);
-                totalCost = totalHours * prices[vehicleType].hora;
-            }
-            
-            if (diffInMinutes >= 720) {
-                totalCost = prices[vehicleType].doceHoras;
+                totalCost = totalHours * rates.hora;
             }
         }
         
         let originalCost = totalCost;
 
         if (specialClientCheckbox.checked) {
-            const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
+            const adjustmentValue = parseNumber(document.getElementById('special-client-adjustment-exit').value) || 0;
             totalCost = originalCost + adjustmentValue;
             if (adjustmentValue < 0) {
                 showNotification(`Descuento de $${formatNumber(Math.abs(adjustmentValue))} COP aplicado.`, 'info');
@@ -591,11 +591,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             notificationArea.style.display = 'none';
         }
-
+        
         currentCalculatedCost = totalCost;
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
-// Registrar salida y calcular costo
+
+    // Registrar salida y calcular costo
     exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
@@ -704,9 +705,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 if (diffInMinutes >= 720) { // 12 horas en minutos
                     totalCost = rates.doceHoras;
+                } else if (diffInMinutes <= 60) {
+                    totalCost = rates.mediaHora;
                 } else {
-                    const numHalfHours = Math.ceil(diffInMinutes / 30);
-                    totalCost = numHalfHours * rates.mediaHora;
+                    const totalHours = Math.ceil(diffInMinutes / 60);
+                    totalCost = totalHours * rates.hora;
                 }
                 
                 originalCost = totalCost;
@@ -767,6 +770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
+        exitCostDisplay.innerHTML = '';
 
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
