@@ -597,7 +597,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Registrar salida y calcular costo
-   
     exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
@@ -624,7 +623,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (vehicle.type.includes('otros')) {
             displayPlate = vehicle.description;
         }
-
 
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
             let monthlyPrice = 0;
@@ -680,8 +678,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 esNoche: true,
                 costoOriginal: nightPrice
             };
+        } else { // Carros y Motos (Por hora y 12 horas)
+            const baseType = vehicle.type.includes('12h') ? vehicle.type.replace('-12h', '') : vehicle.type;
+            const rates = prices[baseType];
 
-        } else { // Carros y Motos por hora
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -702,19 +702,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     esGratis: true,
                     tiempoEstadia: `${diffInMinutes} minutos`
                 };
-
             } else {
-                const vehicleType = vehicle.type;
-
-                if (diffInMinutes <= 60) {
-                    totalCost = prices[vehicleType].mediaHora;
+                if (diffInMinutes >= 720) { // 12 horas en minutos
+                    totalCost = prices[vehicle.type.includes('12h') ? vehicle.type : baseType].doceHoras;
+                } else if (diffInMinutes <= 60) {
+                    totalCost = rates.mediaHora;
                 } else {
                     const totalHours = Math.ceil(diffInMinutes / 60);
-                    totalCost = totalHours * prices[vehicleType].hora;
-                }
-                
-                if (diffInMinutes >= 720) {
-                    totalCost = prices[vehicleType].doceHoras;
+                    totalCost = totalHours * rates.hora;
                 }
                 
                 originalCost = totalCost;
@@ -754,22 +749,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             }
         }
+
         resultContent.innerHTML = resultHTML;
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
+
         try {
-            await deleteDoc(doc(db, "activeVehicles", vehicle.id));
+            await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
             await loadData();
         } catch (e) {
             console.error("Error al eliminar documento: ", e);
             showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
         }
+
         exitForm.reset();
         specialClientCheckbox.checked = false;
         specialClientSection.style.display = 'none';
         specialClientAdjustment.value = '';
         exitCostDisplay.innerHTML = '';
+
         localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
     });
 
