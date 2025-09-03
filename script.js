@@ -540,38 +540,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Calcular costo en tiempo real con ajustes de cliente especial
-    const updateCalculatedCost = () => {
+  const updateCalculatedCost = () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
+        const exitCostDisplay = document.getElementById('exit-cost-display');
 
-        // Salir si no se encuentra el vehículo o si es un tipo con tarifa fija
+        // Solo se calcula el costo en tiempo real para vehículos por hora
         if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
-            exitCostDisplay.innerHTML = '';
             specialClientSection.style.display = 'none';
+            specialClientCheckbox.checked = false;
+            exitCostDisplay.innerHTML = '';
             return;
         }
 
+        specialClientSection.style.display = 'flex';
+        
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
-
         let totalCost = 0;
-        
-        // El cálculo del costo se hace solo para 'carro', 'moto', 'carro-12h' y 'moto-12h'
-        const vehicleType = vehicle.type.replace('-12h', '');
 
         if (diffInMinutes <= 30) {
             totalCost = 0;
         } else {
-            const mediaHoraRate = prices[vehicleType].mediaHora;
-            const twelveHourRate = prices[vehicle.type.includes('12h') ? vehicle.type : vehicleType].doceHoras;
-
-            if (diffInMinutes >= 720) { // 12 horas en minutos
-                totalCost = twelveHourRate;
+            const vehicleType = vehicle.type;
+            
+            if (diffInMinutes <= 60) {
+                 totalCost = prices[vehicleType].mediaHora;
             } else {
-                const numHalfHours = Math.ceil(diffInMinutes / 30);
-                totalCost = numHalfHours * mediaHoraRate;
+                const totalHours = Math.ceil(diffInMinutes / 60);
+                totalCost = totalHours * prices[vehicleType].hora;
+            }
+            
+            if (diffInMinutes >= 720) {
+                totalCost = prices[vehicleType].doceHoras;
             }
         }
         
@@ -593,34 +596,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
 
-    specialClientCheckbox.addEventListener('change', updateCalculatedCost);
-    specialClientAdjustment.addEventListener('input', updateCalculatedCost);
-
-    document.getElementById('plate-exit').addEventListener('input', updateCalculatedCost);
-
     // Registrar salida y calcular costo
+   
     exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate || v.description === plate);
+
         if (!vehicle) {
             showNotification('Placa/Descripción no encontrada. Por favor, verifique e intente de nuevo.', 'error');
             return;
         }
+
         const exitTime = new Date();
         const entryTime = new Date(vehicle.entryTime);
         const diffInMs = exitTime - entryTime;
         const diffInMinutes = Math.round(diffInMs / (1000 * 60));
+        
         let totalCost = 0;
         let originalCost = 0;
         const isSpecialClient = specialClientCheckbox.checked;
         const adjustmentValue = parseNumber(specialClientAdjustment.value) || 0;
+
         let resultHTML = '';
         let receiptData = {};
         let displayPlate = vehicle.plate;
         if (vehicle.type.includes('otros')) {
             displayPlate = vehicle.description;
         }
+
+
         if (['mensualidad', 'moto-mensualidad', 'otros-mensualidad'].includes(vehicle.type)) {
             let monthlyPrice = 0;
             if (vehicle.type === 'mensualidad') {
@@ -630,8 +635,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 monthlyPrice = vehicle.price;
             }
+
             const nextPaymentDate = new Date(vehicle.entryTime);
             nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+
             resultHTML = `
                 <p>Placa/Descripción: <strong>${displayPlate}</strong></p>
                 <p>Tipo: <strong>${vehicle.type}</strong></p>
@@ -640,6 +647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p class="info-message"><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
             `;
             totalCost = 0;
+            
             receiptData = {
                 plate: displayPlate,
                 type: vehicle.type,
@@ -660,6 +668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p class="info-message"><strong>Salida registrada. Tarifa plana nocturna.</strong></p>
             `;
             totalCost = nightPrice;
+            
             receiptData = {
                 plate: displayPlate,
                 type: vehicle.type,
@@ -672,7 +681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 costoOriginal: nightPrice
             };
 
-        } else { // Carros y Motos por hora o 12h
+        } else { // Carros y Motos por hora
             if (diffInMinutes <= 30) {
                 totalCost = 0;
                 resultHTML = `
@@ -682,6 +691,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
                     <p>Total a pagar: <strong>$0 COP</strong></p>
                 `;
+                
                 receiptData = {
                     plate: vehicle.plate,
                     type: vehicle.type,
@@ -694,21 +704,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
             } else {
-                const vehicleTypeBase = vehicle.type.replace('-12h', '');
-                let mediaHoraRate = prices[vehicleTypeBase].mediaHora;
-                let twelveHourRate = prices[vehicleTypeBase].doceHoras;
-                
-                if (vehicle.type.includes('12h')) {
-                    twelveHourRate = prices[vehicle.type].doceHoras;
-                    // Asegurarse de que mediaHoraRate para tipos 12h sea la misma que la base
-                    mediaHoraRate = prices[vehicleTypeBase].mediaHora;
+                const vehicleType = vehicle.type;
+
+                if (diffInMinutes <= 60) {
+                    totalCost = prices[vehicleType].mediaHora;
+                } else {
+                    const totalHours = Math.ceil(diffInMinutes / 60);
+                    totalCost = totalHours * prices[vehicleType].hora;
                 }
                 
-                const totalHalfHours = Math.ceil(diffInMinutes / 30);
-                totalCost = totalHalfHours * mediaHoraRate;
-                
                 if (diffInMinutes >= 720) {
-                    totalCost = twelveHourRate;
+                    totalCost = prices[vehicleType].doceHoras;
                 }
                 
                 originalCost = totalCost;
@@ -742,13 +748,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
                     esGratis: false,
                     esMensualidad: false,
-                    esDoceHoras: vehicle.type.includes('12h'),
                     costoOriginal: originalCost,
                     ajusteEspecial: adjustmentValue,
                     tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
                 };
             }
-        }
+        }}
         resultContent.innerHTML = resultHTML;
         resultDiv.style.display = 'block';
         resultDiv.classList.add('fade-in');
