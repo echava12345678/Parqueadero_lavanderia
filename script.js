@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const receiptData = {
                             clientName: order.clientName,
                             loads: order.loads,
-                            entryTime: order.entryTime,
+                            entryTime: new Date(order.entryTime).toISOString(),
                             exitTime: new Date().toISOString(),
                             costoFinal: totalCost,
                             costoOriginal: originalCost,
