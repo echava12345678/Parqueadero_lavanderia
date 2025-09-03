@@ -595,8 +595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCalculatedCost = totalCost;
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
     };
-
-    // Registrar salida y calcular costo
+// Registrar salida y calcular costo
     exitForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
@@ -704,7 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             } else {
                 if (diffInMinutes >= 720) { // 12 horas en minutos
-                    totalCost = prices[vehicle.type.includes('12h') ? vehicle.type : baseType].doceHoras;
+                    totalCost = rates.doceHoras;
                 } else if (diffInMinutes <= 60) {
                     totalCost = rates.mediaHora;
                 } else {
@@ -779,27 +778,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
             return;
         }
+
         const doc = new jsPDF();
         doc.setFont('helvetica');
         doc.setTextColor(44, 62, 80);
-        const imgWidth = 40;
-        const imgHeight = 40;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const xPos = (pageWidth / 2) - (imgWidth / 2);
-        // doc.addImage(logoBase64, 'PNG', xPos, 5, imgWidth, imgHeight);
+
         doc.setFontSize(22);
-        doc.text('Parqueadero El Reloj', 105, 50, null, null, 'center');
+        doc.text('Parqueadero El Reloj', 105, 20, null, null, 'center');
         doc.setFontSize(16);
+
         if (receiptData.esGratis) {
-            doc.text('Salida Gratis', 105, 60, null, null, 'center');
+            doc.text('Salida Gratis', 105, 30, null, null, 'center');
         } else {
-            doc.text('Recibo de Pago', 105, 60, null, null, 'center');
+            doc.text('Recibo de Pago', 105, 30, null, null, 'center');
         }
+        
         doc.setDrawColor(200, 200, 200);
-        doc.line(20, 65, 190, 65);
-        let y = 75;
+        doc.line(20, 35, 190, 35);
+
+        let y = 45;
         doc.setFontSize(12);
         doc.setTextColor(52, 73, 94);
+
         if (receiptData.esNoche || receiptData.esMensualidad) {
             doc.text(`Descripción: ${receiptData.plate}`, 20, y);
             y += 7;
@@ -807,12 +807,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text(`Placa: ${receiptData.plate}`, 20, y);
             y += 7;
         }
+        
         doc.text(`Tipo de Vehículo: ${receiptData.type.replace('-', ' ').toUpperCase()}`, 20, y);
         y += 10;
         doc.text(`Fecha de Entrada: ${new Date(receiptData.entryTime).toLocaleString('es-CO')}`, 20, y);
         y += 7;
         doc.text(`Fecha de Salida: ${new Date(receiptData.exitTime).toLocaleString('es-CO')}`, 20, y);
         y += 10;
+        
         if (receiptData.esGratis) {
             doc.text(`Tiempo de Estadía: ${receiptData.tiempoEstadia}`, 20, y);
             y += 10;
@@ -859,12 +861,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text(`TOTAL A PAGAR: $${formatNumber(receiptData.costoFinal)} COP`, 20, y);
             y += 20;
         }
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 100, 100);
         doc.text('¡Gracias por su visita!', 105, y, null, null, 'center');
         y += 5;
         doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
+
         doc.save(`Recibo_Parqueadero_${receiptData.plate}.pdf`);
         showNotification('Recibo PDF generado con éxito.', 'success');
     });
