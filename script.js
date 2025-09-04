@@ -972,7 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text('Aplica promoción por cliente frecuente.', 105, y, null, null, 'center');
             y += 10;
         } else {
-            doc.text(`Costo por lavadora: $${formatNumber(LAVANDERIA_PRECIO_KG_9)} COP`, 20, y);
+            doc.text(`Costo por lavadora: $${formatNumber(ata.costoOriginal / data.loads)} COP`, 20, y);
             y += 10;
         }
 
