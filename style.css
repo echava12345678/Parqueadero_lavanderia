@@ -492,3 +492,14 @@ footer {
 .laundry-status-pending { color: #f39c12; }
 .laundry-status-ready { color: #2ecc71; }
 .laundry-status-delivered { color: #3498db; }
+
+.footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa; /* Color de fondo claro */
+    color: #6c757d; /* Color de texto gris */
+    border-top: 1px solid #e9ecef;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
