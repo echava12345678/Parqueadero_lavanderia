@@ -64,6 +64,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allRecords = []; 
     const recordsList = document.getElementById('records-list');
 const recordsSearchInput = document.getElementById('records-search');
+    const recordsFilterButtons = document.querySelectorAll('.records-filter-button');
+     recordsFilterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            recordsFilterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const filterType = button.dataset.type;
+            const searchTerm = recordsSearchInput.value.trim();
+            displayRecords(filterType, searchTerm);
+        });
+    });
+
+      if (recordsSearchInput) {
+        recordsSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.trim();
+            const activeFilterButton = document.querySelector('.records-filter-button.active');
+            const filterType = activeFilterButton ? activeFilterButton.dataset.type : 'all';
+            displayRecords(filterType, searchTerm);
+        });
+    }
 
     if(vehicleSearchInput) {
         vehicleSearchInput.addEventListener('input', (e) => {
@@ -129,7 +148,8 @@ const recordsSearchInput = document.getElementById('records-search');
     
     // Declaración de la variable para vehículos activos
     let activeVehicles = [];
-    let activeLaundryOrders = [];
+let activeLaundryOrders = [];
+let allRecords = []; // Variable para guardar todas las transacciones
 
     const showNotification = (message, type = 'info') => {
         notificationArea.textContent = message;
@@ -260,16 +280,19 @@ const recordsSearchInput = document.getElementById('records-search');
                         };
                         await addDoc(collection(db, 'transactionHistory'), transaction);
                         
-                        // Guarda el registro en la nueva colección de historial
-                        await addDoc(collection(db, "laundryRecords"), receiptData);
-                        // Elimina el pedido de la lista de activos
-                        await deleteDoc(doc(db, "laundryOrders", id));
+                         // Guarda el registro en el historial antes de eliminarlo
+                        await addDoc(collection(db, 'transactionHistory'), {
+                            ...receiptData,
+                            type: 'lavanderia',
+                            clientName: order.clientName
+                        });
 
+                        // Elimina el pedido de la base de datos
+                        await deleteDoc(doc(db, "laundryOrders", id));
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
                         loadData();
-                        loadRecords(); // Carga los nuevos registros en la sección de historial
-                        
+
                         // Generar PDF
                         generateLaundryReceipt(receiptData);
                     }
@@ -341,6 +364,13 @@ const recordsSearchInput = document.getElementById('records-search');
         const laundrySnapshot = await getDocs(laundryCol);
         activeLaundryOrders = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateActiveLaundryList();
+    };
+    // Cargar historial de transacciones
+        const recordsCol = collection(db, 'transactionHistory');
+        const recordsSnapshot = await getDocs(recordsCol);
+        allRecords = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("Historial de Registros cargado:", allRecords);
+        displayRecords();
     };
 
       const loadRecords = async () => {
@@ -891,17 +921,22 @@ const recordsSearchInput = document.getElementById('records-search');
         // Actualizar el costo en la sección de salida
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
 
-        try {
-            // Guarda el registro en la nueva colección de historial
-            await addDoc(collection(db, "parkingRecords"), receiptData);
-            // Elimina el vehículo de la lista de activos
+     try {
+            // Guardar el registro en el historial antes de eliminarlo
+            await addDoc(collection(db, 'transactionHistory'), {
+                ...receiptData,
+                type: 'parqueadero',
+                entryTime: new Date(receiptData.entryTime).toISOString(),
+                exitTime: new Date(receiptData.exitTime).toISOString(),
+                plate: receiptData.plate,
+                description: vehicle.description || null,
+                id: vehicle.id // Opcional, para referencia
+            });
             await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
-            
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
             await loadData();
-            loadRecords(); // Carga los nuevos registros en la sección de historial
         } catch (e) {
-            console.error("Error al registrar la salida: ", e);
+            console.error("Error al guardar o eliminar documento: ", e);
             showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
         }
 
