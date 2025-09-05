@@ -1027,6 +1027,19 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
 
         const generateReceipt = (receiptData) => {
+            const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
+    if (!receiptData) return;
+
+    let nextPaymentDisplay = '';
+    // AÑADE ESTE BLOQUE DE CÓDIGO AQUÍ
+    if (receiptData.proximoPago && receiptData.proximoPago.seconds) {
+        const nextPaymentDate = new Date(receiptData.proximoPago.seconds * 1000);
+        nextPaymentDisplay = nextPaymentDate.toLocaleDateString('es-CO');
+    } else if (receiptData.proximoPago) {
+        // Caso si no es un timestamp de Firebase
+        nextPaymentDisplay = receiptData.proximoPago;
+    }
+
         const doc = new jsPDF();
         doc.setFont('helvetica');
         doc.setTextColor(44, 62, 80);
@@ -1081,8 +1094,8 @@ let allRecords = []; // Variable para guardar todas las transacciones
             y += 7;
             doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
-           if ( receiptData.proximoPago) {
-               doc.text(`Próximo Pago: ${receiptData.proximoPago}`, 20, y);
+           if ( nextPaymentDisplay) {
+               doc.text(`Próximo Pago: ${nextPaymentDisplay}`, 20, y);
                 y += 7;
 }
             y += 10;
