@@ -364,7 +364,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
         const laundrySnapshot = await getDocs(laundryCol);
         activeLaundryOrders = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateActiveLaundryList();
-    };
+    
     // Cargar historial de transacciones
         const recordsCol = collection(db, 'transactionHistory');
         const recordsSnapshot = await getDocs(recordsCol);
