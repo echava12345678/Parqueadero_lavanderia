@@ -334,6 +334,15 @@
                     </div>
                 </div><div id="records-tab" class="tab-content" style="display: none;">
     <h2>Historial de Registros</h2>
+                    <div class="filter-controls">
+        <button class="records-filter-button active" data-type="all">Todos</button>
+        <button class="records-filter-button" data-type="parqueadero">Parqueadero</button>
+        <button class="records-filter-button" data-type="lavanderia">Lavandería</button>
+    </div>
+    <div class="search-container">
+        <input type="text" id="records-search" placeholder="Buscar por placa, descripción o cliente...">
+    </div>
+                    <ul id="records-list"></ul>
     <div class="button-container">
         <button id="export-data-btn" class="button"><i class="fas fa-file-excel"></i> Exportar a Excel</button>
     </div>
