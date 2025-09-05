@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carLessThan30Min = document.getElementById('car-less-than-30min');
     const bikeLessThan30Min = document.getElementById('bike-less-than-30min');
      const transactionTableBody = document.getElementById('transaction-table-body');
-    let allRecords = []; 
+    
     const recordsList = document.getElementById('records-list');
 const recordsSearchInput = document.getElementById('records-search');
     const recordsFilterButtons = document.querySelectorAll('.records-filter-button');
