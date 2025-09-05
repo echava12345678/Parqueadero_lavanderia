@@ -272,54 +272,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     
     // Cargar tarifas y vehículos desde localStorage y Firestore
-    const loadData = async () => {
+   const loadData = async () => {
         // Cargar datos de parqueadero
         const storedPrices = localStorage.getItem('parkingPrices');
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
         }
-        // Utiliza una función para manejar la asignación de valores
+
+        // Utiliza una función para manejar la asignación de valores de forma segura
         const setInputValue = (id, value) => {
             const element = document.getElementById(id);
             if (element) {
                 element.value = value;
             }
         };
+
         if (prices.carro) {
-            carLessThan30Min.value = prices.carro.mediaHoraMenos;
-            document.getElementById('car-half-hour').value = prices.carro.mediaHora;
-            document.getElementById('car-hour').value = prices.carro.hora;
-            document.getElementById('car-12h').value = prices.carro.doceHoras;
-            document.getElementById('car-month').value = prices.carro.mes;
+            setInputValue('car-half-hour', prices.carro.mediaHora);
+            setInputValue('car-hour', prices.carro.hora);
+            setInputValue('car-12h', prices.carro.doceHoras);
+            setInputValue('car-month', prices.carro.mes);
         }
         if (prices.moto) {
-            bikeLessThan30Min.value = prices.moto.mediaHoraMenos;
-            document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
-            document.getElementById('bike-hour').value = prices.moto.hora;
-            document.getElementById('bike-12h').value = prices.moto.doceHoras;
-            document.getElementById('bike-month').value = prices.moto.mes;
+            setInputValue('bike-half-hour', prices.moto.mediaHora);
+            setInputValue('bike-hour', prices.moto.hora);
+            setInputValue('bike-12h', prices.moto.doceHoras);
+            setInputValue('bike-month', prices.moto.mes);
         }
         if (prices['otros-mensualidad']) {
-            document.getElementById('other-small-min').value = prices['otros-mensualidad'].pequeño.min;
-            document.getElementById('other-small-max').value = prices['otros-mensualidad'].pequeño.max;
-            document.getElementById('other-small-default').value = prices['otros-mensualidad'].pequeño.mes;
-            document.getElementById('other-medium-min').value = prices['otros-mensualidad'].mediano.min;
-            document.getElementById('other-medium-max').value = prices['otros-mensualidad'].mediano.max;
-            document.getElementById('other-medium-default').value = prices['otros-mensualidad'].mediano.mes;
-            document.getElementById('other-large-min').value = prices['otros-mensualidad'].grande.min;
-            document.getElementById('other-large-max').value = prices['otros-mensualidad'].grande.max;
-            document.getElementById('other-large-default').value = prices['otros-mensualidad'].grande.mes;
+            setInputValue('other-small-min', prices['otros-mensualidad'].pequeño.min);
+            setInputValue('other-small-max', prices['otros-mensualidad'].pequeño.max);
+            setInputValue('other-small-default', prices['otros-mensualidad'].pequeño.mes);
+            setInputValue('other-medium-min', prices['otros-mensualidad'].mediano.min);
+            setInputValue('other-medium-max', prices['otros-mensualidad'].mediano.max);
+            setInputValue('other-medium-default', prices['otros-mensualidad'].mediano.mes);
+            setInputValue('other-large-min', prices['otros-mensualidad'].grande.min);
+            setInputValue('other-large-max', prices['otros-mensualidad'].grande.max);
+            setInputValue('other-large-default', prices['otros-mensualidad'].grande.mes);
         }
         if (prices['otros-noche']) {
-            document.getElementById('other-night-small-min').value = prices['otros-noche'].pequeño.min;
-            document.getElementById('other-night-small-max').value = prices['otros-noche'].pequeño.max;
-            document.getElementById('other-night-small-default').value = prices['otros-noche'].pequeño.noche;
-            document.getElementById('other-night-medium-min').value = prices['otros-noche'].mediano.min;
-            document.getElementById('other-night-medium-max').value = prices['otros-noche'].mediano.max;
-            document.getElementById('other-night-medium-default').value = prices['otros-noche'].mediano.noche;
-            document.getElementById('other-night-large-min').value = prices['otros-noche'].grande.min;
-            document.getElementById('other-night-large-max').value = prices['otros-noche'].grande.max;
-            document.getElementById('other-night-large-default').value = prices['otros-noche'].grande.noche;
+            setInputValue('other-night-small-min', prices['otros-noche'].pequeño.min);
+            setInputValue('other-night-small-max', prices['otros-noche'].pequeño.max);
+            setInputValue('other-night-small-default', prices['otros-noche'].pequeño.noche);
+            setInputValue('other-night-medium-min', prices['otros-noche'].mediano.min);
+            setInputValue('other-night-medium-max', prices['otros-noche'].mediano.max);
+            setInputValue('other-night-medium-default', prices['otros-noche'].mediano.noche);
+            setInputValue('other-night-large-min', prices['otros-noche'].grande.min);
+            setInputValue('other-night-large-max', prices['otros-noche'].grande.max);
+            setInputValue('other-night-large-default', prices['otros-noche'].grande.noche);
         }
         
         const vehiclesCol = collection(db, 'activeVehicles');
