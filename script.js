@@ -18,29 +18,32 @@ const db = getFirestore(app);
 window.db = db;
 
 
-let prices = {};
-const loadPrices = async () => {
-    try {
-        const pricesCol = collection(db, 'prices');
-        const pricesSnapshot = await getDocs(pricesCol);
-        if (!pricesSnapshot.empty) {
-            pricesSnapshot.forEach(doc => {
-                const data = doc.data();
-                if (doc.id === 'general') {
-                    prices = data;
-                } else {
-                    prices[doc.id] = data;
-                }
-            });
-        }
-        console.log('Precios cargados:', prices);
-    } catch (e) {
-        console.error("Error al cargar los precios: ", e);
-    }
-};
 
 document.addEventListener('DOMContentLoaded', async () => {
-     await loadPrices();
+     let prices = {};
+
+   
+    const loadPrices = async () => {
+        try {
+            const pricesCol = collection(db, 'prices');
+            const pricesSnapshot = await getDocs(pricesCol);
+            if (!pricesSnapshot.empty) {
+                pricesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (doc.id === 'general') {
+                        prices = data;
+                    } else {
+                        prices[doc.id] = data;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error al cargar los precios: ", e);
+        }
+    };
+
+    
+    await loadPrices();
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
