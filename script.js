@@ -284,12 +284,13 @@ let allRecords = []; // Variable para guardar todas las transacciones
     clientName: order.clientName
                         
                        
-
+});
                         // Elimina el pedido de la base de datos
                         await deleteDoc(doc(db, "laundryOrders", id));
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
                         loadData();
+                         
 
                         // Generar PDF
                         generateLaundryReceipt(receiptData);
