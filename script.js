@@ -1031,6 +1031,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
             return;
         }
 
+        const generateReceipt = (receiptData) => {
         const doc = new jsPDF();
         doc.setFont('helvetica');
         doc.setTextColor(44, 62, 80);
@@ -1123,7 +1124,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
         doc.save(`Recibo_Parqueadero_${receiptData.plate}.pdf`);
         showNotification('Recibo PDF generado con éxito.', 'success');
-    });
+    };
 
     // Registrar pedido de lavandería
     laundryEntryForm.addEventListener('submit', async (e) => {
