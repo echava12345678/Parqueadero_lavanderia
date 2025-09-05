@@ -851,22 +851,23 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
             const nextPaymentDate = new Date(vehicle.entryTime);
             nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+            const formattedNextPaymentDate = nextPaymentDate.toLocaleDateString('es-CO');
 
             resultHTML = `
                 <p>Placa/Descripción: <strong>${displayPlate}</strong></p>
                 <p>Tipo: <strong>${vehicle.type}</strong></p>
                 <p>Valor mensualidad: <strong>$${formatNumber(monthlyPrice)} COP</strong></p>
-                <p>Día de pago próximo: <strong>${nextPaymentDate.toLocaleDateString('es-CO')}</strong></p>
+                <p>Día de pago próximo: <strong>${formattedNextPaymentDate}</strong></p>
                 <p class="info-message"><strong>Salida registrada. No se aplica cargo por hora.</strong></p>
             `;
-            totalCost = 0;
+            totalCost =monthlyPrice;
             
             receiptData = {
                 plate: displayPlate,
                 type: vehicle.type,
                 entryTime,
                 exitTime,
-                costoFinal: 0,
+                costoFinal:totalCost,
                 descuento: 0,
                 esMensualidad: true,
                 costoOriginal: monthlyPrice,
