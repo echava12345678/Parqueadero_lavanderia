@@ -1135,8 +1135,8 @@ let allRecords = []; // Variable para guardar todas las transacciones
     // Registrar pedido de lavandería
     laundryEntryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const clientName = laundryClientName.value.trim();
-        const clientNameNormalized = clientNameRaw.toLowerCase(); 
+       const clientNameRaw = laundryClientName.value.trim(); // Se define aquí
+        const clientNameNormalized = clientNameRaw.toLowerCase(); // Se usa aquí
         const loads = parseInt(laundryLoads.value);
 
         const clientsCol = collection(db, 'laundryClients');
@@ -1181,7 +1181,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
         try {
             await addDoc(collection(db, 'laundryOrders'), newOrder);
-            showNotification(`Pedido de lavandería para ${clientName} registrado.`, 'success');
+            showNotification(`Pedido de lavandería para ${clientNameRaw} registrado.`, 'success');
             laundryEntryForm.reset();
             laundryLoads.value = '1';
             await loadData();
