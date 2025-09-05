@@ -86,14 +86,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Tarifas iniciales con estructura completa
     let prices = {
         carro: {
-              mediaHoraMenos: 0,
+              menos30Min: 0,
             mediaHora: 3000,
             hora: 6000,
             doceHoras: 30000,
             mes: 250000
         },
         moto: {
-            mediaHoraMenos: 0,
+           menos30Min: 0,
             mediaHora: 2000,
             hora: 4000,
             doceHoras: 15000,
@@ -288,12 +288,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         if (prices.carro) {
+            setInputValue('car-less-than-30min', prices.carro.menos30Min);
             setInputValue('car-half-hour', prices.carro.mediaHora);
             setInputValue('car-hour', prices.carro.hora);
             setInputValue('car-12h', prices.carro.doceHoras);
             setInputValue('car-month', prices.carro.mes);
         }
         if (prices.moto) {
+            setInputValue('bike-less-than-30min', prices.moto.menos30Min);
             setInputValue('bike-half-hour', prices.moto.mediaHora);
             setInputValue('bike-hour', prices.moto.hora);
             setInputValue('bike-12h', prices.moto.doceHoras);
@@ -448,6 +450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Guardar tarifas del administrador
     savePricesBtn.addEventListener('click', () => {
         prices.carro = {
+            menos30Min: parseNumber(document.getElementById('car-less-than-30min').value),
             mediaHoraMenos: parseNumber(carLessThan30Min.value),
             mediaHora: parseNumber(document.getElementById('car-half-hour').value),
             hora: parseNumber(document.getElementById('car-hour').value),
@@ -455,6 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             mes: parseNumber(document.getElementById('car-month').value)
         };
         prices.moto = {
+            menos30Min: parseNumber(document.getElementById('bike-less-than-30min').value),
             mediaHoraMenos: parseNumber(bikeLessThan30Min.value),
             mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
             hora: parseNumber(document.getElementById('bike-hour').value),
@@ -596,17 +600,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rates = prices[baseType];
 
         if (diffInMinutes <= 30) {
-            totalCost = rates.mediaHoraMenos;
-        } else {
-            if (diffInMinutes >= 720) { // 12 horas en minutos
+                totalCost = rates.menos30Min; // Usar el nuevo precio
+                originalCost = totalCost;
+
+                resultHTML = `
+                    <p>Placa: <strong>${vehicle.plate}</strong></p>
+                    <p>Tipo: <strong>${vehicle.type}</strong></p>
+                    <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
+                    <p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>
+                `;
+                
+                receiptData = {
+                    plate: vehicle.plate,
+                    type: vehicle.type,
+                    entryTime,
+                    exitTime,
+                    costoFinal: totalCost,
+                    descuento: 0,
+                    esGratis: false,
+                    tiempoEstadia: `${diffInMinutes} minutos`
+                };
+
+            } else if (diffInMinutes >= 720) { // 12 horas o más
                 totalCost = rates.doceHoras;
-            } else if (diffInMinutes <= 60) {
+                originalCost = totalCost;
+
+            } else if (diffInMinutes <= 60) { // Entre 31 y 60 minutos
                 totalCost = rates.mediaHora;
-            } else {
+                originalCost = totalCost;
+
+            } else { // Más de una hora y menos de 12 horas
                 const totalHours = Math.ceil(diffInMinutes / 60);
                 totalCost = totalHours * rates.hora;
+                originalCost = totalCost;
             }
-        }
         
         let originalCost = totalCost;
 
