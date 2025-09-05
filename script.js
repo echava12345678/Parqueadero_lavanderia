@@ -278,7 +278,10 @@ let allRecords = []; // Variable para guardar todas las transacciones
                             originalCost: originalCost,
                             isFree: order.isFree
                         };
-                        await addDoc(collection(db, 'transactionHistory'), transaction);
+                       await addDoc(collection(db, 'transactionHistory'), {
+    ...receiptData,
+    type: 'lavanderia',
+    clientName: order.clientName
                         
                        
 
