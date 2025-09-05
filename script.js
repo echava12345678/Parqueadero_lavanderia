@@ -286,7 +286,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
                         await deleteDoc(doc(db, "laundryOrders", id));
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
-                        // loadData();
+                        loadData();
 
                         // Generar PDF
                         generateLaundryReceipt(receiptData);
@@ -866,7 +866,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
                 descuento: 0,
                 esMensualidad: true,
                 costoOriginal: monthlyPrice,
-                proximoPago: nextPaymentDate
+                proximoPago:  formattedNextPaymentDate
             };
         } else if (vehicle.type === 'otros-noche') {
             const nightPrice = vehicle.price;
@@ -1078,7 +1078,10 @@ let allRecords = []; // Variable para guardar todas las transacciones
             y += 7;
             doc.text(`Valor Mensualidad: $${formatNumber(receiptData.costoOriginal)} COP`, 20, y);
             y += 7;
-            doc.text(`Próximo Día de Pago: ${new Date(receiptData.proximoPago).toLocaleDateString('es-CO')}`, 20, y);
+           if ( receiptData.proximoPago) {
+               doc.text(`Próximo Pago: ${receiptData.proximoPago}`, 20, y);
+                y += 7;
+}
             y += 10;
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
