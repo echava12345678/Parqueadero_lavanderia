@@ -403,16 +403,16 @@ const recordsSearchInput = document.getElementById('records-search');
     const tabContents = document.querySelectorAll('.tab-content');
 
     tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.style.display = 'none');
+    button.addEventListener('click', () => {
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.style.display = 'none');
 
-            button.classList.add('active');
-            const targetTabId = button.dataset.tab;
-            document.getElementById(targetTabId).style.display = 'block';
-            document.getElementById(targetTabId).classList.add('fade-in');
+        button.classList.add('active');
+        const targetTabId = button.dataset.tab;
+        document.getElementById(targetTabId).style.display = 'block';
+        document.getElementById(targetTabId).classList.add('fade-in');
 
-            if (targetTabId === 'active-vehicles-tab') {
+        if (targetTabId === 'active-vehicles-tab') {
             updateActiveVehiclesList('all');
             document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
         } else if (targetTabId === 'laundry-tab') {
