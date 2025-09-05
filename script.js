@@ -740,13 +740,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rates = prices[baseType];
 
             if (diffInMinutes <= 30) {
-                totalCost = 0;
+                totalCost = rates.menos30Min;;
                 resultHTML = `
                     <p>Placa: <strong>${vehicle.plate}</strong></p>
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
                     <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
-                    <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
-                    <p>Total a pagar: <strong>$0 COP</strong></p>
+                    // <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
+                    <p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>
                 `;
                 
                 receiptData = {
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     exitTime,
                     costoFinal: 0,
                     descuento: 0,
-                    esGratis: true,
+                    esGratis: false,
                     tiempoEstadia: `${diffInMinutes} minutos`
                 };
             } else {
