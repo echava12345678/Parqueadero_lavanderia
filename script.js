@@ -19,36 +19,12 @@ window.db = db;
 
 
 
+
 document.addEventListener('DOMContentLoaded', async () => {
-     let prices = {};
-
-   
-    const loadPrices = async () => {
-        try {
-            const pricesCol = collection(db, 'prices');
-            const pricesSnapshot = await getDocs(pricesCol);
-            if (!pricesSnapshot.empty) {
-                pricesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (doc.id === 'general') {
-                        prices = data;
-                    } else {
-                        prices[doc.id] = data;
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Error al cargar los precios: ", e);
-        }
-    };
-
-    
-    await loadPrices();
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
-    
-   
+
     // Constantes de lavandería
     const LAVANDERIA_PRECIO_KG_9 = 30000;
     const PROMOCION_LAVADOS_GRATIS = 5;
@@ -263,70 +239,67 @@ let allRecords = []; // Variable para guardar todas las transacciones
             });
 
             // Agrega los event listeners a los nuevos botones
-          laundryList.addEventListener('click', async (e) => {
-        const targetButton = e.target;
-        if (targetButton.classList.contains('ready-button')) {
-            const id = targetButton.dataset.id;
-            try {
-                await updateDoc(doc(db, "laundryOrders", id), { status: "ready" });
-                showNotification('Pedido listo para entrega.', 'success');
-                await loadData();
-            } catch (e) {
-                console.error("Error al marcar pedido como listo: ", e);
-                showNotification("Error al actualizar el estado del pedido.", 'error');
-            }
-        }
-    
-        if (targetButton.classList.contains('delivered-button')) {
-            const id = targetButton.dataset.id;
-            const clientName = targetButton.dataset.clientName;
-            const loads = parseInt(targetButton.dataset.loads);
-            const isFree = targetButton.dataset.free === 'true';
+            document.querySelectorAll('.ready-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    await updateDoc(doc(db, "laundryOrders", id), { status: 'ready' });
+                    showNotification('El pedido ha sido marcado como "Listo".', 'success');
+                    showAnimation('fas fa-thumbs-up', 'ready', '¡Pedido Listo!');
+                    loadData();
+                });
+            });
 
-            const regularPrice = prices?.laundry?.regular || 0;
-        const amount = isFree ? 0 : regularPrice * loads;
-    
-            // Crear el objeto del registro de historial
-            const newRecord = {
-                type: 'lavandería',
-                clientName: clientName,
-                loads: loads,
-                amount: isFree ? 0 : prices.laundry.regular * loads,
-                entryTime: new Date(targetButton.dataset.entryTime).toISOString(),
-                exitTime: new Date().toISOString(),
-                isFree: isFree,
-                // Clave para evitar duplicados: guarda el ID del pedido de lavandería
-                laundryOrderId: id
-            };
-    
-            try {
-                // Primero, verifica si el registro ya existe en el historial
-                const q = query(collection(db, "transactionHistory"), where("laundryOrderId", "==", id));
-                const querySnapshot = await getDocs(q);
-    
-                if (querySnapshot.empty) {
-                    // Si no existe, lo agrega
-                    await updateDoc(doc(db, "laundryOrders", id), { status: "delivered", completionTime: new Date().toISOString() });
-                    await addDoc(collection(db, "transactionHistory"), newRecord);
-                    showNotification(`Pedido de ${clientName} entregado y registrado en el historial.`, 'success');
-                } else {
-                    // Si ya existe, solo actualiza el estado del pedido de lavandería y muestra una notificación
-                    await updateDoc(doc(db, "laundryOrders", id), { status: "delivered", completionTime: new Date().toISOString() });
-                    showNotification(`El pedido de ${clientName} ya ha sido registrado en el historial.`, 'info');
-                }
-    
-                await loadData();
-            } catch (e) {
-                console.error("Error al marcar pedido como entregado y registrar: ", e);
-                showNotification("Error al registrar la entrega del pedido.", 'error');
-            }
+            document.querySelectorAll('.delivered-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const order = activeLaundryOrders.find(o => o.id === id);
+                    if (order) {
+                        const totalCost = order.isFree ? 0 : (order.loads * LAVANDERIA_PRECIO_KG_9);
+                        const originalCost = order.loads * LAVANDERIA_PRECIO_KG_9;
+                        const receiptData = {
+                            clientName: order.clientName,
+                            loads: order.loads,
+                            entryTime: new Date(order.entryTime).toISOString(),
+                            exitTime: new Date().toISOString(),
+                            costoFinal: totalCost,
+                            costoOriginal: originalCost,
+                            isFree: order.isFree
+                        };
+                        localStorage.setItem('lastLaundryReceipt', JSON.stringify(receiptData));
+
+                        // REGISTRO DE TRANSACCIÓN DE LAVANDERÍA
+                        const transaction = {
+                            type: 'Lavandería',
+                            clientName: order.clientName,
+                            loads: order.loads,
+                            entryTime: new Date(order.entryTime).toISOString(),
+                            exitTime: new Date().toISOString(),
+                            cost: totalCost,
+                            originalCost: originalCost,
+                            isFree: order.isFree
+                        };
+                        await addDoc(collection(db, 'transactionHistory'), transaction);
+                        
+                         // Guarda el registro en el historial antes de eliminarlo
+                        await addDoc(collection(db, 'transactionHistory'), {
+                            ...receiptData,
+                            type: 'lavanderia',
+                            clientName: order.clientName
+                        });
+
+                        // Elimina el pedido de la base de datos
+                        await deleteDoc(doc(db, "laundryOrders", id));
+                        showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
+                        showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
+                        loadData();
+
+                        // Generar PDF
+                        generateLaundryReceipt(receiptData);
+                    }
+                });
+            });
         }
-    });
-}
     };
-   
-
-
     
     // Cargar tarifas y vehículos desde localStorage y Firestore
    const loadData = async () => {
