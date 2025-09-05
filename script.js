@@ -280,12 +280,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
                         };
                         await addDoc(collection(db, 'transactionHistory'), transaction);
                         
-                         // Guarda el registro en el historial antes de eliminarlo
-                        await addDoc(collection(db, 'transactionHistory'), {
-                            ...receiptData,
-                            type: 'lavanderia',
-                            clientName: order.clientName
-                        });
+                       
 
                         // Elimina el pedido de la base de datos
                         await deleteDoc(doc(db, "laundryOrders", id));
