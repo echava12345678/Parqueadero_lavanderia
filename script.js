@@ -1027,8 +1027,8 @@ let allRecords = []; // Variable para guardar todas las transacciones
     // Descargar recibo de pago en PDF
 
 
-        const generateReceipt = (receiptData) => {
-            const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
+        const generateReceipt = async () => {
+        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
     if (!receiptData) return;
 
     let nextPaymentDisplay = '';
