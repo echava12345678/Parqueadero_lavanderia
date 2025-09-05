@@ -1164,53 +1164,36 @@ let allRecords = []; // Variable para guardar todas las transacciones
         doc.save(`Recibo_Lavanderia_${data.clientName}.pdf`);
     };
      // FUNCIÓN PARA EXPORTAR DATOS A EXCEL
-    exportDataBtn.addEventListener('click', async () => {
-        showNotification('Generando archivo de Excel...', 'info');
-        const transactionsCol = collection(db, 'transactionHistory');
-        const transactionSnapshot = await getDocs(transactionsCol);
-        const transactions = transactionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+   const exportToExcelBtn = document.getElementById('export-data-btn');
+    if (exportToExcelBtn) {
+        exportToExcelBtn.addEventListener('click', () => {
+            if (allRecords.length === 0) {
+                showNotification("No hay registros para exportar.", 'info');
+                return;
+            }
 
-        if (transactions.length === 0) {
-            showNotification('No hay registros de transacciones para exportar.', 'info');
-            return;
-        }
+            const dataToExport = allRecords.map(record => {
+                let typeDisplay = record.type === 'parqueadero' ? 'Parqueadero' : 'Lavandería';
+                let plateOrClient = record.plate || record.clientName || 'N/A';
+                let details = record.description || record.loads ? `Cargas: ${record.loads}` : 'N/A';
+                
+                return {
+                    'Tipo de Transacción': typeDisplay,
+                    'Placa/Cliente': plateOrClient,
+                    'Detalles': details,
+                    'Fecha de Entrada': new Date(record.entryTime).toLocaleString('es-CO'),
+                    'Fecha de Salida': new Date(record.exitTime || record.entryTime).toLocaleString('es-CO'),
+                    'Costo Final (COP)': record.costoFinal,
+                };
+            });
 
-        const parkingData = transactions
-            .filter(t => t.type === 'Parqueadero')
-            .map(t => ({
-                Tipo: t.type,
-                Placa: t.plate,
-                'Tipo de Vehículo': t.vehicleType,
-                'Hora de Entrada': new Date(t.entryTime).toLocaleString('es-CO'),
-                'Hora de Salida': new Date(t.exitTime).toLocaleString('es-CO'),
-                'Duración (minutos)': t.durationMinutes,
-                'Costo Original': t.originalCost,
-                'Ajuste Especial': t.adjustment,
-                'Costo Final': t.finalCost
-            }));
-
-        const laundryData = transactions
-            .filter(t => t.type === 'Lavandería')
-            .map(t => ({
-                Tipo: t.type,
-                Cliente: t.clientName,
-                'Cantidad de Lavadoras': t.loads,
-                'Hora de Entrada': new Date(t.entryTime).toLocaleString('es-CO'),
-                'Hora de Salida': new Date(t.exitTime).toLocaleString('es-CO'),
-                'Costo Original': t.originalCost,
-                'Es Gratis': t.isFree ? 'Sí' : 'No',
-                'Costo Final': t.finalCost
-            }));
-
-        const combinedData = [...parkingData, ...laundryData];
-
-        const worksheet = XLSX.utils.json_to_sheet(combinedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Transacciones');
-        
-        XLSX.writeFile(workbook, 'Registros_Parqueadero_Lavanderia.xlsx');
-        showNotification('Archivo de Excel generado con éxito.', 'success');
-    });
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
+            XLSX.writeFile(workbook, 'Registros_Transacciones.xlsx');
+            showNotification('Registros exportados a Excel exitosamente.', 'success');
+        });
+    }
 
     // NUEVA FUNCIÓN PARA MOSTRAR LOS REGISTROS EN LA PÁGINA
     const loadTransactionHistory = async () => {
@@ -1255,6 +1238,19 @@ let allRecords = []; // Variable para guardar todas las transacciones
         } catch (e) {
             console.error("Error al cargar el historial: ", e);
             transactionTableBody.innerHTML = `<tr><td colspan="6">Error al cargar los registros.</td></tr>`;
+        }
+    };
+    const deleteRecord = async (id) => {
+        if (!confirm(`¿Estás seguro de que quieres eliminar este registro? Esta acción es irreversible.`)) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "transactionHistory", id));
+            showNotification('Registro eliminado exitosamente.', 'success');
+            await loadData();
+        } catch (e) {
+            console.error("Error al eliminar el registro: ", e);
+            showNotification("Error al eliminar el registro. Intente de nuevo.", 'error');
         }
     };
     // Event listeners para los filtros y buscador de registros
