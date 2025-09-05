@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
 
+    await loadPrices();
     // Constantes de lavandería
     const LAVANDERIA_PRECIO_KG_9 = 30000;
     const PROMOCION_LAVADOS_GRATIS = 5;
