@@ -1136,10 +1136,11 @@ let allRecords = []; // Variable para guardar todas las transacciones
     laundryEntryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const clientName = laundryClientName.value.trim();
+        const clientNameNormalized = clientNameRaw.toLowerCase(); 
         const loads = parseInt(laundryLoads.value);
 
         const clientsCol = collection(db, 'laundryClients');
-        const clientQuery = query(clientsCol, where("name", "==", clientName));
+        const clientQuery = query(clientsCol, where("normalizedName", "==", clientNameNormalized));
         const clientSnapshot = await getDocs(clientQuery);
         
         let isFree = false;
@@ -1147,7 +1148,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
         if (clientSnapshot.empty) {
             // Cliente nuevo, crea el perfil
-            const newClientData = { name: clientName, loadsCount: loads };
+            const newClientData = { name: clientNameRaw, normalizedName: clientNameNormalized, loadsCount: loads };
             const docRef = await addDoc(clientsCol, newClientData);
             clientDocId = docRef.id;
             showNotification(`Cliente nuevo registrado: ${clientName}.`, 'info');
