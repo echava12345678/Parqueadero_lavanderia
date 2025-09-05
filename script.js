@@ -61,6 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carLessThan30Min = document.getElementById('car-less-than-30min');
     const bikeLessThan30Min = document.getElementById('bike-less-than-30min');
      const transactionTableBody = document.getElementById('transaction-table-body');
+    let allRecords = []; 
+    const recordsList = document.getElementById('records-list');
+const recordsSearchInput = document.getElementById('records-search');
 
     if(vehicleSearchInput) {
         vehicleSearchInput.addEventListener('input', (e) => {
@@ -257,12 +260,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         };
                         await addDoc(collection(db, 'transactionHistory'), transaction);
                         
-                        // Elimina el pedido de la base de datos
+                        // Guarda el registro en la nueva colección de historial
+                        await addDoc(collection(db, "laundryRecords"), receiptData);
+                        // Elimina el pedido de la lista de activos
                         await deleteDoc(doc(db, "laundryOrders", id));
+
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
                         loadData();
-
+                        loadRecords(); // Carga los nuevos registros en la sección de historial
+                        
                         // Generar PDF
                         generateLaundryReceipt(receiptData);
                     }
@@ -334,6 +341,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         const laundrySnapshot = await getDocs(laundryCol);
         activeLaundryOrders = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateActiveLaundryList();
+    };
+
+      const loadRecords = async () => {
+        const parkingRecordsCol = collection(db, 'parkingRecords');
+        const laundryRecordsCol = collection(db, 'laundryRecords');
+        
+        const parkingSnapshot = await getDocs(parkingRecordsCol);
+        const laundrySnapshot = await getDocs(laundryRecordsCol);
+        
+        const parkingRecords = parkingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'parqueadero' }));
+        const laundryRecords = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lavanderia' }));
+        
+        allRecords = [...parkingRecords, ...laundryRecords];
+        displayRecords();
+    };
+
+     const displayRecords = (filter = 'all', searchTerm = '') => {
+        recordsList.innerHTML = '';
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        
+        const filteredRecords = allRecords.filter(record => {
+            const matchesFilter = filter === 'all' || record.type === filter;
+            const matchesSearch = lowerSearchTerm === '' || 
+                (record.plate && record.plate.toLowerCase().includes(lowerSearchTerm)) ||
+                (record.description && record.description.toLowerCase().includes(lowerSearchTerm)) ||
+                (record.clientName && record.clientName.toLowerCase().includes(lowerSearchTerm));
+                
+            return matchesFilter && matchesSearch;
+        });
+
+        if (filteredRecords.length === 0) {
+            recordsList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay registros para mostrar.</li>';
+        } else {
+            filteredRecords.forEach(record => {
+                const li = document.createElement('li');
+                const date = new Date(record.exitTime).toLocaleString('es-CO');
+                if (record.type === 'parqueadero') {
+                    const displayPlate = record.plate || record.description;
+                    li.innerHTML = `<span>Parqueadero: <strong>${displayPlate}</strong></span> <span>Tipo: ${record.type}</span> <span>Salida: ${date}</span> <span>Total: <strong>$${formatNumber(record.costoFinal)} COP</strong></span>`;
+                } else if (record.type === 'lavanderia') {
+                    li.innerHTML = `<span>Lavandería: <strong>${record.clientName}</strong></span> <span>Cargas: ${record.loads}</span> <span>Salida: ${date}</span> <span>Total: <strong>$${formatNumber(record.costoFinal)} COP</strong></span>`;
+                }
+                recordsList.appendChild(li);
+            });
+        }
     };
 
     // Filtros de vehículos activos
@@ -838,11 +890,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
 
         try {
+            // Guarda el registro en la nueva colección de historial
+            await addDoc(collection(db, "parkingRecords"), receiptData);
+            // Elimina el vehículo de la lista de activos
             await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
+            
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
             await loadData();
+            loadRecords(); // Carga los nuevos registros en la sección de historial
         } catch (e) {
-            console.error("Error al eliminar documento: ", e);
+            console.error("Error al registrar la salida: ", e);
             showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
         }
 
@@ -1163,6 +1220,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             transactionTableBody.innerHTML = `<tr><td colspan="6">Error al cargar los registros.</td></tr>`;
         }
     };
+    // Event listeners para los filtros y buscador de registros
+    document.querySelectorAll('.records-filter-button').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.records-filter-button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            displayRecords(button.dataset.type, recordsSearchInput.value);
+        });
+    });
+
+    recordsSearchInput.addEventListener('input', (e) => {
+        const activeFilterButton = document.querySelector('.records-filter-button.active');
+        const filterType = activeFilterButton ? activeFilterButton.dataset.type : 'all';
+        displayRecords(filterType, e.target.value);
+    });
+
+    loadRecords(); // Llama a esta función al inicio para cargar todos los registros
 
 
     // Llamada inicial para cargar los datos y actualizar la lista de vehículos.
