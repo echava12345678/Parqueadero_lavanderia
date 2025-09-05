@@ -301,6 +301,28 @@ let allRecords = []; // Variable para guardar todas las transacciones
     });
 }
     };
+    let prices = {}; // Variable global para almacenar los precios
+
+const loadPrices = async () => {
+    try {
+        const pricesCol = collection(db, 'prices');
+        const pricesSnapshot = await getDocs(pricesCol);
+
+        if (!pricesSnapshot.empty) {
+            pricesSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (doc.id === 'general') {
+                    prices = data;
+                } else {
+                    prices[doc.id] = data;
+                }
+            });
+        }
+        console.log('Precios cargados:', prices);
+    } catch (e) {
+        console.error("Error al cargar los precios: ", e);
+    }
+};
     
     // Cargar tarifas y vehículos desde localStorage y Firestore
    const loadData = async () => {
