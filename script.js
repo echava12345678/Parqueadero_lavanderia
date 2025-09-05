@@ -40,10 +40,11 @@ const loadPrices = async () => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+     await loadPrices();
     // Definición de la función de utilidad al inicio del script
     const formatNumber = (num) => new Intl.NumberFormat('es-CO').format(num);
     const parseNumber = (str) => parseInt(str.replace(/\./g, '')) || 0;
-    await loadPrices();
+    
    
     // Constantes de lavandería
     const LAVANDERIA_PRECIO_KG_9 = 30000;
