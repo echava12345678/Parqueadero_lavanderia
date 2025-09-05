@@ -739,15 +739,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             const baseType = vehicle.type.includes('12h') ? vehicle.type.replace('-12h', '') : vehicle.type;
             const rates = prices[baseType];
 
+            let totalCost = 0;
+            let originalCost = 0;
+            let adjustmentValue = 0;
+            let esGratis = false;
+
             if (diffInMinutes <= 30) {
                 totalCost = rates.menos30Min;
+                originalCost = totalCost; // Se define el costo original
+                adjustmentValue = 0; // Se define el ajuste en 0
+                esGratis = false;
+                
+                if (isSpecialClient) {
+                    totalCost = originalCost + adjustmentValue;
+                }
+
+                const totalHoursDisplay = Math.floor(diffInMinutes / 60);
+                const totalMinutesDisplay = diffInMinutes % 60;
+
                 resultHTML = `
                     <p>Placa: <strong>${vehicle.plate}</strong></p>
                     <p>Tipo: <strong>${vehicle.type}</strong></p>
-                    <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
-                    
-                    <p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>
+                    <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
+                    <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
                 `;
+                
+                if (isSpecialClient) {
+                    resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
+                }
+                
+                resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
                 
                 receiptData = {
                     plate: vehicle.plate,
@@ -757,6 +778,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     costoFinal: totalCost,
                     descuento: 0,
                     esGratis: false,
+                     costoOriginal: originalCost,
+                    ajusteEspecial: adjustmentValue,
                     tiempoEstadia: `${diffInMinutes} minutos`
                 };
             } else {
