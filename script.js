@@ -413,21 +413,18 @@ const recordsSearchInput = document.getElementById('records-search');
             document.getElementById(targetTabId).classList.add('fade-in');
 
             if (targetTabId === 'active-vehicles-tab') {
-                updateActiveVehiclesList('all');
-                document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
-            }
-            if (targetTabId === 'laundry-tab') {
-                updateActiveLaundryList();
-                document.querySelector('.laundry-button[data-laundry-tab="laundry-register-tab"]').click();
-            }
-            if (targetTabId === 'records-tab') { // Lógica para la pestaña de registros
+            updateActiveVehiclesList('all');
+            document.querySelector('.filter-button[data-filter="all"]').classList.add('active');
+        } else if (targetTabId === 'laundry-tab') {
+            updateActiveLaundryList();
+            document.querySelector('.laundry-button[data-laundry-tab="laundry-register-tab"]').click();
+        } else if (targetTabId === 'records-tab') {
             const activeFilterButton = document.querySelector('.records-filter-button.active');
             const filterType = activeFilterButton ? activeFilterButton.dataset.type : 'all';
             displayRecords(filterType, recordsSearchInput.value);
         }
-        });
     });
-
+});
     // Manejo de pestañas de lavandería
     const laundryButtons = document.querySelectorAll('.laundry-button');
     const laundryContents = document.querySelectorAll('.laundry-content');
