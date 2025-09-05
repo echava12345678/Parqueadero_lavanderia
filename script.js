@@ -1015,7 +1015,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
     } catch (e) {
         console.error("Error al guardar o eliminar documento: ", e);
         showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
-    }
+    }});
 
     // Descargar recibo de pago en PDF
 
