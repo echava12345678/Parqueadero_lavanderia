@@ -420,6 +420,11 @@ const recordsSearchInput = document.getElementById('records-search');
                 updateActiveLaundryList();
                 document.querySelector('.laundry-button[data-laundry-tab="laundry-register-tab"]').click();
             }
+            if (targetTabId === 'records-tab') { // Lógica para la pestaña de registros
+            const activeFilterButton = document.querySelector('.records-filter-button.active');
+            const filterType = activeFilterButton ? activeFilterButton.dataset.type : 'all';
+            displayRecords(filterType, recordsSearchInput.value);
+        }
         });
     });
 
