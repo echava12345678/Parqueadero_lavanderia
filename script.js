@@ -1151,7 +1151,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
             const newClientData = { name: clientNameRaw, normalizedName: clientNameNormalized, loadsCount: loads };
             const docRef = await addDoc(clientsCol, newClientData);
             clientDocId = docRef.id;
-            showNotification(`Cliente nuevo registrado: ${clientName}.`, 'info');
+            showNotification(`Cliente nuevo registrado: ${clientNameRaw}.`, 'info');
         } else {
             // Cliente existente, actualiza el contador de lavadas
             const clientDoc = clientSnapshot.docs[0];
@@ -1162,16 +1162,16 @@ let allRecords = []; // Variable para guardar todas las transacciones
                 isFree = true;
                 // Reinicia el contador para el próximo ciclo
                 await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: loads });
-                showNotification(`¡Lavado gratis para ${clientName}! Se ha aplicado la promoción.`, 'success');
+                showNotification(`¡Lavado gratis para ${clientNameRaw}! Se ha aplicado la promoción.`, 'success');
             } else {
                 // Incrementa el contador
                 await updateDoc(doc(db, "laundryClients", clientDocId), { loadsCount: currentLoads + loads });
-                showNotification(`Se han sumado ${loads} lavadas a la cuenta de ${clientName}.`, 'info');
+                showNotification(`Se han sumado ${loads} lavadas a la cuenta de ${clientNameRaw}.`, 'info');
             }
         }
         
         const newOrder = {
-            clientName,
+           clientName: clientNameRaw,
             loads,
             entryTime: new Date().toISOString(),
             status: 'pending',
