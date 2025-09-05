@@ -258,6 +258,9 @@ let allRecords = []; // Variable para guardar todas las transacciones
             const clientName = targetButton.dataset.clientName;
             const loads = parseInt(targetButton.dataset.loads);
             const isFree = targetButton.dataset.free === 'true';
+
+            const regularPrice = prices?.laundry?.regular || 0;
+        const amount = isFree ? 0 : regularPrice * loads;
     
             // Crear el objeto del registro de historial
             const newRecord = {
