@@ -994,35 +994,28 @@ let allRecords = []; // Variable para guardar todas las transacciones
 
         // Actualizar el costo en la sección de salida
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
+ try {
+        // Declare and define the variable recordToSave before using it
+        const recordToSave = {
+            ...receiptData,
+            type: 'parqueadero',
+            entryTime: new Date(receiptData.entryTime).toISOString(),
+            exitTime: new Date(receiptData.exitTime).toISOString(),
+            plate: receiptData.plate,
+            description: vehicle.description || null,
+            id: vehicle.id // Opcional, para referencia
+        };
 
-     try {
-            // Guardar el registro en el historial antes de eliminarlo
-            await addDoc(collection(db, 'transactionHistory'), {
-                ...receiptData,
-                type: 'parqueadero',
-                entryTime: new Date(receiptData.entryTime).toISOString(),
-                exitTime: new Date(receiptData.exitTime).toISOString(),
-                plate: receiptData.plate,
-                description: vehicle.description || null,
-                id: vehicle.id // Opcional, para referencia
-            });
-          await addDoc(collection(db, 'transactionHistory'), recordToSave);
-            await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
-            showNotification(`Salida de ${displayPlate} registrada.`, 'success');
-            await loadData();
-        } catch (e) {
-            console.error("Error al guardar o eliminar documento: ", e);
-            showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
-        }
-
-        exitForm.reset();
-        specialClientCheckbox.checked = false;
-        specialClientSection.style.display = 'none';
-        specialClientAdjustment.value = '';
-        exitCostDisplay.innerHTML = '';
-
-        localStorage.setItem('lastReceipt', JSON.stringify(receiptData));
-    });
+        // Guarda el registro en el historial
+        await addDoc(collection(db, 'transactionHistory'), recordToSave);
+        
+        await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
+        showNotification(`Salida de ${displayPlate} registrada.`, 'success');
+        await loadData();
+    } catch (e) {
+        console.error("Error al guardar o eliminar documento: ", e);
+        showNotification("Error al registrar la salida. Por favor, intente de nuevo.", 'error');
+    }
 
     // Descargar recibo de pago en PDF
 
