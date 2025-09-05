@@ -709,3 +709,177 @@ footer {
 .button i {
     margin-right: 8px;
 }
+/* ========================================= */
+/* Media Queries para Responsividad Móvil */
+/* ========================================= */
+
+/* Para pantallas de hasta 768px (teléfonos y tabletas en modo retrato) */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px 10px;
+        border-radius: 8px;
+    }
+
+    .logo-container {
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+
+    .header-logo {
+        height: 100px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        margin-top: 10px;
+    }
+    
+    .nav-button {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    main {
+        padding: 0;
+    }
+
+    .card {
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+
+    h3 {
+        font-size: 1.3em;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+        padding: 10px;
+        font-size: 0.95em;
+    }
+
+    button {
+        padding: 10px 15px;
+        font-size: 0.95em;
+    }
+
+    .tab-menu,
+    .laundry-menu {
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+
+    .tab-button,
+    .laundry-button {
+        padding: 12px 10px;
+        font-size: 0.9em;
+        flex-basis: 48%; /* Hace que los botones se acomoden en dos columnas */
+        text-align: center;
+    }
+    
+    .tab-button.active,
+    .laundry-button.active {
+        border-bottom-width: 2px;
+    }
+    
+    .filter-buttons {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .filter-button {
+        font-size: 0.8em;
+        padding: 8px 10px;
+        flex-grow: 1;
+    }
+
+    .search-container {
+        width: 100%;
+    }
+
+    .records-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .records-search input {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .table-container {
+        border: none;
+        box-shadow: none;
+    }
+
+    .table-container table {
+        display: block;
+        width: 100%;
+    }
+
+    .table-container thead {
+        display: none; /* Oculta los encabezados de la tabla en móvil */
+    }
+
+    .table-container tr {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .table-container td {
+        border-bottom: none;
+        padding: 8px 0;
+        text-align: left;
+    }
+    
+    .table-container td::before {
+        content: attr(data-label); /* Usa el atributo data-label para mostrar el encabezado */
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-right: 10px;
+    }
+    
+    .button-container {
+        text-align: center;
+    }
+
+    .button {
+        width: 100%;
+    }
+
+    footer {
+        padding: 15px;
+    }
+    
+    .floating-message-bubble {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 10px;
+        max-width: 90%;
+        padding: 10px 15px;
+        font-size: 0.85em;
+    }
+}
