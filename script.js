@@ -387,35 +387,109 @@ let allRecords = []; // Variable para guardar todas las transacciones
         displayRecords();
     };
 
-     const displayRecords = (filter = 'all', searchTerm = '') => {
-        recordsList.innerHTML = '';
-        const lowerSearchTerm = searchTerm.toLowerCase();
+     const displayRecords = (filterType = 'all', searchTerm = '') => {
+        const recordsTableBody = document.getElementById('transaction-table-body');
+        if (!recordsTableBody) return;
+
+        recordsTableBody.innerHTML = '';
         
         const filteredRecords = allRecords.filter(record => {
-            const matchesFilter = filter === 'all' || record.type === filter;
-            const matchesSearch = lowerSearchTerm === '' || 
-                (record.plate && record.plate.toLowerCase().includes(lowerSearchTerm)) ||
-                (record.description && record.description.toLowerCase().includes(lowerSearchTerm)) ||
-                (record.clientName && record.clientName.toLowerCase().includes(lowerSearchTerm));
-                
+            let matchesFilter = true;
+            if (filterType !== 'all') {
+                matchesFilter = record.type === filterType;
+            }
+
+            let matchesSearch = true;
+            if (searchTerm) {
+                const lowerCaseSearch = searchTerm.toLowerCase();
+                matchesSearch = (record.plate && record.plate.toLowerCase().includes(lowerCaseSearch)) ||
+                                (record.description && record.description.toLowerCase().includes(lowerCaseSearch)) ||
+                                (record.clientName && record.clientName.toLowerCase().includes(lowerCaseSearch));
+            }
             return matchesFilter && matchesSearch;
         });
 
         if (filteredRecords.length === 0) {
-            recordsList.innerHTML = '<li><i class="fas fa-info-circle"></i> No hay registros para mostrar.</li>';
-        } else {
-            filteredRecords.forEach(record => {
-                const li = document.createElement('li');
-                const date = new Date(record.exitTime).toLocaleString('es-CO');
-                if (record.type === 'parqueadero') {
-                    const displayPlate = record.plate || record.description;
-                    li.innerHTML = `<span>Parqueadero: <strong>${displayPlate}</strong></span> <span>Tipo: ${record.type}</span> <span>Salida: ${date}</span> <span>Total: <strong>$${formatNumber(record.costoFinal)} COP</strong></span>`;
-                } else if (record.type === 'lavanderia') {
-                    li.innerHTML = `<span>Lavandería: <strong>${record.clientName}</strong></span> <span>Cargas: ${record.loads}</span> <span>Salida: ${date}</span> <span>Total: <strong>$${formatNumber(record.costoFinal)} COP</strong></span>`;
-                }
-                recordsList.appendChild(li);
-            });
+            recordsTableBody.innerHTML = '<tr><td colspan="6" class="no-records-message">No se encontraron registros.</td></tr>';
+            return;
         }
+
+        filteredRecords.sort((a, b) => new Date(b.exitTime || b.entryTime) - new Date(a.exitTime || a.entryTime));
+        
+        filteredRecords.forEach(record => {
+            const row = document.createElement('tr');
+            let recordTypeDisplay = '';
+            let plateOrClient = record.plate || record.clientName || 'N/A';
+            let detailsDisplay = '';
+            let totalCostDisplay = record.costoFinal ? `$${formatNumber(record.costoFinal)} COP` : 'Gratis';
+            
+            if (record.type === 'parqueadero') {
+                recordTypeDisplay = 'Parqueadero';
+                detailsDisplay = record.description || 'N/A';
+            } else if (record.type === 'lavanderia') {
+                recordTypeDisplay = 'Lavandería';
+                detailsDisplay = record.loads ? `Cargas: ${record.loads}` : 'N/A';
+            }
+
+            row.innerHTML = `
+                <td>${recordTypeDisplay}</td>
+                <td>${plateOrClient}</td>
+                <td>${new Date(record.entryTime).toLocaleString('es-CO')}</td>
+                <td>${new Date(record.exitTime).toLocaleString('es-CO')}</td>
+                <td>${totalCostDisplay}</td>
+                <td class="action-buttons-cell">
+                    <button class="view-receipt-btn" data-id="${record.id}" data-type="${record.type}"><i class="fas fa-file-pdf"></i></button>
+                    <button class="delete-record-btn" data-id="${record.id}" data-type="${record.type}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            recordsTableBody.appendChild(row);
+        });
+
+        document.querySelectorAll('.view-receipt-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const recordId = e.target.closest('button').dataset.id;
+                const recordType = e.target.closest('button').dataset.type;
+                const record = allRecords.find(r => r.id === recordId);
+                if (record) {
+                    if (recordType === 'parqueadero') {
+                        const receiptData = {
+                            plate: record.plate,
+                            type: record.type,
+                            entryTime: new Date(record.entryTime),
+                            exitTime: new Date(record.exitTime),
+                            costoFinal: record.costoFinal,
+                            descuento: record.descuento,
+                            esGratis: record.esGratis,
+                            esMensualidad: record.esMensualidad,
+                            costoOriginal: record.costoOriginal,
+                            ajusteEspecial: record.ajusteEspecial,
+                            tiempoEstadia: record.tiempoEstadia,
+                            esNoche: record.esNoche,
+                            proximoPago: record.proximoPago
+                        };
+                        generateReceipt(receiptData);
+                    } else if (recordType === 'lavanderia') {
+                        const receiptData = {
+                            clientName: record.clientName,
+                            loads: record.loads,
+                            entryTime: new Date(record.entryTime).toISOString(),
+                            exitTime: new Date(record.exitTime).toISOString(),
+                            costoFinal: record.costoFinal,
+                            costoOriginal: record.costoOriginal,
+                            isFree: record.isFree
+                        };
+                        generateLaundryReceipt(receiptData);
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.delete-record-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const id = e.target.closest('button').dataset.id;
+                deleteRecord(id);
+            });
+        });
     };
 
     // Filtros de vehículos activos
