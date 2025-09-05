@@ -301,7 +301,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
     });
 }
     };
-    let prices = {}; // Variable global para almacenar los precios
+   
 
 const loadPrices = async () => {
     try {
