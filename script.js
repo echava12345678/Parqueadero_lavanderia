@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plateEntryInput = document.getElementById('plate-entry');
     const plateLabel = document.getElementById('plate-label');
     const otherPriceLabel = document.getElementById('other-price-label');
-    const vehicleSearchInput = document.getElementById('vehicle-search');
+    const vehicleSearchInput = document.getElementById('vehicle-search-input');
     const exportDataBtn = document.getElementById('export-data-btn');
     const carLessThan30Min = document.getElementById('car-less-than-30min');
     const bikeLessThan30Min = document.getElementById('bike-less-than-30min');
@@ -278,6 +278,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (storedPrices) {
             prices = JSON.parse(storedPrices);
         }
+        // Utiliza una función para manejar la asignación de valores
+        const setInputValue = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value;
+            }
+        };
         if (prices.carro) {
             carLessThan30Min.value = prices.carro.mediaHoraMenos;
             document.getElementById('car-half-hour').value = prices.carro.mediaHora;
@@ -566,8 +573,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const plate = document.getElementById('plate-exit').value.trim().toUpperCase();
         const vehicle = activeVehicles.find(v => v.plate === plate);
         const exitCostDisplay = document.getElementById('exit-cost-display');
-        const specialClientSection = document.getElementById('special-client-section-exit');
-        const specialClientCheckbox = document.getElementById('special-client-checkbox-exit');
+        const specialClientSection = document.getElementById('special-client-section');
+        const specialClientCheckbox = document.getElementById('special-client');
 
         // Salir si no se encuentra el vehículo o si es un tipo con tarifa fija
         if (!vehicle || ['mensualidad', 'moto-mensualidad', 'otros-mensualidad', 'otros-noche'].includes(vehicle.type)) {
