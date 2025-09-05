@@ -1024,12 +1024,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
     });
 
     // Descargar recibo de pago en PDF
-    printReceiptBtn.addEventListener('click', () => {
-        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
-        if (!receiptData) {
-            showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
-            return;
-        }
+
 
         const generateReceipt = (receiptData) => {
         const doc = new jsPDF();
@@ -1125,6 +1120,16 @@ let allRecords = []; // Variable para guardar todas las transacciones
         doc.save(`Recibo_Parqueadero_${receiptData.plate}.pdf`);
         showNotification('Recibo PDF generado con éxito.', 'success');
     };
+    // Descargar recibo de pago en PDF
+    printReceiptBtn.addEventListener('click', () => {
+        const receiptData = JSON.parse(localStorage.getItem('lastReceipt'));
+        if (!receiptData) {
+            showNotification('No hay un recibo para descargar. Finalice una salida primero.', 'info');
+            return;
+        }
+        // Llama a la función ahora que está definida globalmente
+        generateReceipt(receiptData);
+    });
 
     // Registrar pedido de lavandería
     laundryEntryForm.addEventListener('submit', async (e) => {
