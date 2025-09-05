@@ -79,6 +79,7 @@
                 <button class="tab-button" data-tab="laundry-tab">Lavandería</button>
                 <button class="tab-button" data-tab="active-vehicles-tab">Vehículos Activos</button>
                 <button class="tab-button" data-tab="admin-tab" id="admin-tab-button" style="display: none;">Administrador</button>
+                <button class="tab-button" data-tab="records-tab">Registros</button>
             </nav>
 
             <div id="notification-area" class="message info-message" style="display: none;"></div>
@@ -323,7 +324,28 @@
                         </div>
                         <button id="save-prices" class="primary-button"><i class="fas fa-save"></i> Guardar Tarifas</button>
                     </div>
-                </div>
+                </div><div id="records-tab" class="tab-content" style="display: none;">
+    <h2>Historial de Registros</h2>
+    <div class="button-container">
+        <button id="export-data-btn" class="button"><i class="fas fa-file-excel"></i> Exportar a Excel</button>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Placa / Cliente</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Costo</th>
+                    <th>Detalles</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-table-body">
+                </tbody>
+        </table>
+    </div>
+</div>
             </div>
         </section>
     </main>
