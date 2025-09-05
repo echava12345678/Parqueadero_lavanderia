@@ -286,7 +286,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
                         await deleteDoc(doc(db, "laundryOrders", id));
                         showNotification('El pedido ha sido marcado como "Entregado" y el recibo está listo para descargar.', 'success');
                         showAnimation('fas fa-handshake', 'delivered', '¡Pedido Entregado!');
-                        loadData();
+                        // loadData();
 
                         // Generar PDF
                         generateLaundryReceipt(receiptData);
@@ -1002,6 +1002,7 @@ let allRecords = []; // Variable para guardar todas las transacciones
                 description: vehicle.description || null,
                 id: vehicle.id // Opcional, para referencia
             });
+          await addDoc(collection(db, 'transactionHistory'), recordToSave);
             await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
             await loadData();
