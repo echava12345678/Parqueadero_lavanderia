@@ -1,10 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 const { jsPDF } = window.jspdf;
-
-// Se agrega la librería para exportar a Excel
-import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.min.js';
-
 
 // Configuración de Firebase - REEMPLAZA CON TU PROPIA CONFIGURACIÓN SI ES NECESARIO
 const firebaseConfig = {
@@ -61,15 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plateLabel = document.getElementById('plate-label');
     const otherPriceLabel = document.getElementById('other-price-label');
     const vehicleSearchInput = document.getElementById('vehicle-search');
-
-    // NUEVOS ELEMENTOS DEL DOM
     const exportDataBtn = document.getElementById('export-data-btn');
-    // Campo para la nueva tarifa de < 30 min
     const carLessThan30Min = document.getElementById('car-less-than-30min');
     const bikeLessThan30Min = document.getElementById('bike-less-than-30min');
-    // NUEVO ELEMENTO DEL DOM PARA LA TABLA DE REGISTROS
-    const transactionTableBody = document.getElementById('transaction-table-body');
-
+     const transactionTableBody = document.getElementById('transaction-table-body');
 
     if(vehicleSearchInput) {
         vehicleSearchInput.addEventListener('input', (e) => {
@@ -95,15 +86,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Tarifas iniciales con estructura completa
     let prices = {
         carro: {
-            // NUEVO CAMPO PARA TARIFA < 30 MIN
-            mediaHoraMenos: 0,
+              mediaHoraMenos: 0,
             mediaHora: 3000,
             hora: 6000,
             doceHoras: 30000,
             mes: 250000
         },
         moto: {
-            // NUEVO CAMPO PARA TARIFA < 30 MIN
             mediaHoraMenos: 0,
             mediaHora: 2000,
             hora: 4000,
@@ -290,7 +279,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             prices = JSON.parse(storedPrices);
         }
         if (prices.carro) {
-            // Cargar el nuevo campo
             carLessThan30Min.value = prices.carro.mediaHoraMenos;
             document.getElementById('car-half-hour').value = prices.carro.mediaHora;
             document.getElementById('car-hour').value = prices.carro.hora;
@@ -298,7 +286,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('car-month').value = prices.carro.mes;
         }
         if (prices.moto) {
-            // Cargar el nuevo campo
             bikeLessThan30Min.value = prices.moto.mediaHoraMenos;
             document.getElementById('bike-half-hour').value = prices.moto.mediaHora;
             document.getElementById('bike-hour').value = prices.moto.hora;
@@ -338,9 +325,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const laundrySnapshot = await getDocs(laundryCol);
         activeLaundryOrders = laundrySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateActiveLaundryList();
-
-        // Cargar el historial de transacciones al inicio
-        loadTransactionHistory();
     };
 
     // Filtros de vehículos activos
@@ -457,14 +441,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Guardar tarifas del administrador
     savePricesBtn.addEventListener('click', () => {
         prices.carro = {
-            mediaHoraMenos: parseNumber(carLessThan30Min.value), // GUARDAR NUEVA TARIFA
+            mediaHoraMenos: parseNumber(carLessThan30Min.value),
             mediaHora: parseNumber(document.getElementById('car-half-hour').value),
             hora: parseNumber(document.getElementById('car-hour').value),
             doceHoras: parseNumber(document.getElementById('car-12h').value),
             mes: parseNumber(document.getElementById('car-month').value)
         };
         prices.moto = {
-            mediaHoraMenos: parseNumber(bikeLessThan30Min.value), // GUARDAR NUEVA TARIFA
+            mediaHoraMenos: parseNumber(bikeLessThan30Min.value),
             mediaHora: parseNumber(document.getElementById('bike-half-hour').value),
             hora: parseNumber(document.getElementById('bike-hour').value),
             doceHoras: parseNumber(document.getElementById('bike-12h').value),
@@ -603,17 +587,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let totalCost = 0;
         const baseType = vehicle.type.includes('12h') ? vehicle.type.replace('-12h', '') : vehicle.type;
         const rates = prices[baseType];
-        
-        // MODIFICACIÓN: Lógica de cobro basada en la nueva tarifa
+
         if (diffInMinutes <= 30) {
             totalCost = rates.mediaHoraMenos;
-        } else if (diffInMinutes >= 720) { // 12 horas en minutos
-            totalCost = rates.doceHoras;
-        } else if (diffInMinutes <= 60) {
-            totalCost = rates.mediaHora;
         } else {
-            const totalHours = Math.ceil(diffInMinutes / 60);
-            totalCost = totalHours * rates.hora;
+            if (diffInMinutes >= 720) { // 12 horas en minutos
+                totalCost = rates.doceHoras;
+            } else if (diffInMinutes <= 60) {
+                totalCost = rates.mediaHora;
+            } else {
+                const totalHours = Math.ceil(diffInMinutes / 60);
+                totalCost = totalHours * rates.hora;
+            }
         }
         
         let originalCost = totalCost;
@@ -720,53 +705,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             const baseType = vehicle.type.includes('12h') ? vehicle.type.replace('-12h', '') : vehicle.type;
             const rates = prices[baseType];
 
-            // MODIFICACIÓN: Lógica de cobro basada en la nueva tarifa
             if (diffInMinutes <= 30) {
-                totalCost = rates.mediaHoraMenos;
-            } else if (diffInMinutes >= 720) { // 12 horas en minutos
-                totalCost = rates.doceHoras;
-            } else if (diffInMinutes <= 60) {
-                totalCost = rates.mediaHora;
-            } else {
-                const totalHours = Math.ceil(diffInMinutes / 60);
-                totalCost = totalHours * rates.hora;
-            }
+                totalCost = 0;
+                resultHTML = `
+                    <p>Placa: <strong>${vehicle.plate}</strong></p>
+                    <p>Tipo: <strong>${vehicle.type}</strong></p>
+                    <p>Tiempo de estadía: <strong>${diffInMinutes} minutos</strong></p>
+                    <p class="info-message">El vehículo no ha superado la media hora de estadía.</p>
+                    <p>Total a pagar: <strong>$0 COP</strong></p>
+                `;
                 
-            originalCost = totalCost;
-            
-            if (isSpecialClient) {
-                totalCost = originalCost + adjustmentValue;
+                receiptData = {
+                    plate: vehicle.plate,
+                    type: vehicle.type,
+                    entryTime,
+                    exitTime,
+                    costoFinal: 0,
+                    descuento: 0,
+                    esGratis: true,
+                    tiempoEstadia: `${diffInMinutes} minutos`
+                };
+            } else {
+                if (diffInMinutes >= 720) { // 12 horas en minutos
+                    totalCost = rates.doceHoras;
+                } else if (diffInMinutes <= 60) {
+                    totalCost = rates.mediaHora;
+                } else {
+                    const totalHours = Math.ceil(diffInMinutes / 60);
+                    totalCost = totalHours * rates.hora;
+                }
+                
+                originalCost = totalCost;
+                
+                if (isSpecialClient) {
+                    totalCost = originalCost + adjustmentValue;
+                }
+
+                const totalHoursDisplay = Math.floor(diffInMinutes / 60);
+                const totalMinutesDisplay = diffInMinutes % 60;
+
+                resultHTML = `
+                    <p>Placa: <strong>${vehicle.plate}</strong></p>
+                    <p>Tipo: <strong>${vehicle.type}</strong></p>
+                    <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
+                    <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
+                `;
+                
+                if (isSpecialClient) {
+                    resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
+                }
+                
+                resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
+
+                receiptData = {
+                    plate: vehicle.plate,
+                    type: vehicle.type,
+                    entryTime,
+                    exitTime,
+                    costoFinal: totalCost,
+                    descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
+                    esGratis: false,
+                    esMensualidad: false,
+                    costoOriginal: originalCost,
+                    ajusteEspecial: adjustmentValue,
+                    tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
+                };
             }
-
-            const totalHoursDisplay = Math.floor(diffInMinutes / 60);
-            const totalMinutesDisplay = diffInMinutes % 60;
-
-            resultHTML = `
-                <p>Placa: <strong>${vehicle.plate}</strong></p>
-                <p>Tipo: <strong>${vehicle.type}</strong></p>
-                <p>Tiempo de estadía: <strong>${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos</strong></p>
-                <p>Costo calculado (sin ajuste): <strong>$${formatNumber(originalCost)} COP</strong></p>
-            `;
-            
-            if (isSpecialClient) {
-                resultHTML += `<p>Ajuste por cliente especial: <strong>${adjustmentValue >= 0 ? '+' : ''}$${formatNumber(adjustmentValue)} COP</strong></p>`;
-            }
-            
-            resultHTML += `<p>Total a pagar: <strong>$${formatNumber(totalCost)} COP</strong></p>`;
-
-            receiptData = {
-                plate: vehicle.plate,
-                type: vehicle.type,
-                entryTime,
-                exitTime,
-                costoFinal: totalCost,
-                descuento: adjustmentValue < 0 ? Math.abs(adjustmentValue) : 0,
-                esGratis: totalCost === 0, // Se ajusta la condición de gratuidad
-                esMensualidad: false,
-                costoOriginal: originalCost,
-                ajusteEspecial: adjustmentValue,
-                tiempoEstadia: `${totalHoursDisplay} horas y ${totalMinutesDisplay} minutos`
-            };
         }
 
         resultContent.innerHTML = resultHTML;
@@ -777,20 +781,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         exitCostDisplay.innerHTML = `Total a Pagar: <strong>$${formatNumber(totalCost)} COP</strong>`;
 
         try {
-            // REGISTRO DE TRANSACCIÓN DE PARQUEADERO
-            const transaction = {
-                type: 'Parqueadero',
-                plate: displayPlate,
-                vehicleType: vehicle.type,
-                entryTime: new Date(vehicle.entryTime).toISOString(),
-                exitTime: new Date().toISOString(),
-                durationMinutes: diffInMinutes,
-                originalCost: originalCost,
-                finalCost: totalCost,
-                adjustment: adjustmentValue
-            };
-            await addDoc(collection(db, 'transactionHistory'), transaction);
-
             await deleteDoc(doc(window.db, "activeVehicles", vehicle.id));
             showNotification(`Salida de ${displayPlate} registrada.`, 'success');
             await loadData();
@@ -858,6 +848,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(231, 76, 60); 
+            doc.text('NO COMPLETÓ LA MEDIA HORA', 105, y, null, null, 'center');
+            y += 7;
+            doc.text('SU SALIDA ES GRATIS', 105, y, null, null, 'center');
+            y += 10;
+            doc.setFontSize(16);
             doc.text('TOTAL A PAGAR: $0 COP', 105, y, null, null, 'center');
             y += 20;
         } else if (receiptData.esMensualidad) {
@@ -1017,8 +1012,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.text('Medellín, Antioquia, Colombia', 105, y, null, null, 'center');
         doc.save(`Recibo_Lavanderia_${data.clientName}.pdf`);
     };
-
-    // FUNCIÓN PARA EXPORTAR DATOS A EXCEL
+     // FUNCIÓN PARA EXPORTAR DATOS A EXCEL
     exportDataBtn.addEventListener('click', async () => {
         showNotification('Generando archivo de Excel...', 'info');
         const transactionsCol = collection(db, 'transactionHistory');
